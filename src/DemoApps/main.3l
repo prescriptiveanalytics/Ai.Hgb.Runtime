@@ -1,0 +1,35 @@
+
+# document pub sub demo
+# #####################
+
+import ai.hgb.packages.base:latest
+import ai.hgb.packages.base.network:latest
+
+name = "ai.hgb.packages.demoapps.procon"
+
+host = "127.0.0.1"
+port = 1883
+basetopic = "docs"
+
+struct Document {
+  string Id
+  string Author
+  string Text
+  float Value
+}
+
+message DocumentMessage { Document payload }
+
+nodetype Producer {
+  output DocumentMessage docs
+}
+
+nodetype Consumer {
+  input DocumentMessage docs
+}
+
+node Producer pro
+node Consumer con
+
+pro.docs --> con.docs
+

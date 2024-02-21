@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+	<!--<ItemGroup Condition="'$(Configuration)' == 'Debug'">-->
+	<ItemGroup>
+		<Content Include="configurations\*.*">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
+	<ItemGroup>
+	  <PackageReference Include="Ai.Hgb.Dat.Communication" Version="0.1.4-prerelease-gebc7d23a1b" />
+	  <PackageReference Include="Ai.Hgb.Dat.Configuration" Version="0.1.5-prerelease-gebc7d23a1b" />
+	  <PackageReference Include="Ai.Hgb.Dat.Utils" Version="0.1.4-prerelease-gebc7d23a1b" />
+	</ItemGroup>
+	
+</Project>

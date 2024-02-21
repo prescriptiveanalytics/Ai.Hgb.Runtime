@@ -1,0 +1,23 @@
+﻿Type: Socket
+MonitorConfiguration: false
+MonitorIntervalMilliseconds: 0
+
+
+
+# socket specific configuration:
+
+Id: consumer
+Name: Consumer
+
+SocketType: MQTT
+
+Broker:
+  HostName: "host.docker.internal"
+  Port: 1883
+
+BaseTopic: docs
+PayloadType: json
+
+DefaultSubscriptionOptions:
+  Topic: all  
+  QosLevel: ExactlyOnce

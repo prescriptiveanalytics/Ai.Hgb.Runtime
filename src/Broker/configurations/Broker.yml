@@ -1,0 +1,19 @@
+﻿Type: Socket
+MonitorConfiguration: false
+MonitorIntervalMilliseconds: 0
+
+
+
+# socket specific configuration:
+
+Id: broker
+Name: Broker
+
+SocketType: MQTT
+
+Broker:
+  HostName: "127.0.0.1"
+  Port: 1883
+
+BaseTopic: docs
+PayloadType: json
