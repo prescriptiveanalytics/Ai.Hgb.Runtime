@@ -24,6 +24,7 @@ namespace Ai.Hgb.Runtime {
     public Uri RepositoryUri { get; set; }
     public Uri LanguageServiceUri { get; set; }
     public HostAddress BrokerUri { get; set; }
+    public HostAddress BrokerWebsocketUri { get; set; }
 
     public string RepositoryImageName { get; set; }
     public string RepositoryImageTag { get; set; }
@@ -35,7 +36,8 @@ namespace Ai.Hgb.Runtime {
     public string LanguageServiceContainerName { get; set; }
     public string BrokerImageName { get; set; }
     public string BrokerImageTag { get; set; }
-    public int BrokerImageExposedPort { get; set; }
+    public int BrokerImageExposedMqttPort { get; set; }
+    public int BrokerImageExposedWebsocketPort { get; set; }
     public string BrokerContainerName { get; set; }
     #endregion properties
 
@@ -313,13 +315,14 @@ namespace Ai.Hgb.Runtime {
       path = Path.Join(path, "broker");
 
       // https://stackoverflow.com/questions/70900149/what-equivalent-in-docker-dotnet-net-core-docker-parameters-expose-and-p
-      var portBindings = new Dictionary<string, IList<PortBinding>> { { BrokerUri.Port.ToString(), new List<PortBinding>() } };
+      var portBindings = new Dictionary<string, IList<PortBinding>> { { BrokerUri.Port.ToString(), new List<PortBinding>() }, { BrokerWebsocketUri.Port.ToString(), new List<PortBinding>() } };
       portBindings[BrokerUri.Port.ToString()].Add(new PortBinding() { HostIP = BrokerUri.Name, HostPort = BrokerUri.Port.ToString() });
+      portBindings[BrokerWebsocketUri.Port.ToString()].Add(new PortBinding() { HostIP = BrokerWebsocketUri.Name, HostPort = BrokerWebsocketUri.Port.ToString() });
       var hostConfig = new HostConfig() { 
         PortBindings = portBindings
         //,Binds = new[] { path }
       };
-      var exposedPorts = new Dictionary<string, EmptyStruct> { { BrokerUri.Port.ToString(), new EmptyStruct() } };
+      var exposedPorts = new Dictionary<string, EmptyStruct> { { BrokerUri.Port.ToString(), new EmptyStruct() }, { BrokerWebsocketUri.Port.ToString(), new EmptyStruct() } };
 
       // startup repository container
       var parameters = new CreateContainerParameters() {

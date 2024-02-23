@@ -3,10 +3,12 @@ using Ai.Hgb.Runtime;
 
 var repl = new Repl {
   Startup = new List<RuntimeComponents> { RuntimeComponents.Docker, RuntimeComponents.Repository, RuntimeComponents.LanguageService, RuntimeComponents.Broker },
+  //Startup = new List<RuntimeComponents> { RuntimeComponents.Docker, RuntimeComponents.Repository },
   DockerUri = new Uri("npipe://./pipe/docker_engine"),
   RepositoryUri = new Uri("http://localhost:8001/"),
   LanguageServiceUri = new Uri("http://localhost:8003/"),
   BrokerUri = new HostAddress("127.0.0.1", 1883),
+  BrokerWebsocketUri = new HostAddress("127.0.0.1", 5000),
   RepositoryImageName = "ai.hgb.runtime.repository.img",
   RepositoryImageTag = "latest",
   RepositoryImageExposedPort = 7001,
@@ -18,7 +20,8 @@ var repl = new Repl {
   BrokerImageName = "ai.hgb.runtime.broker.img",
   BrokerImageTag = "latest",
   BrokerContainerName = "ai.hgb.runtime.broker.ctn",
-  BrokerImageExposedPort = 1883,
+  BrokerImageExposedMqttPort = 1883,
+  BrokerImageExposedWebsocketPort = 5000
 };
 await repl.Run(args);
 

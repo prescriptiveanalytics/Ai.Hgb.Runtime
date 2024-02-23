@@ -20,6 +20,10 @@ if (args.Length == 2) repositoryPort = int.Parse(args[1]);
 if (args.Length == 3) repositoryHost = args[2];
 repositoryHost = repositoryHost.Replace("localhost", "host.docker.internal");
 repositoryHost = repositoryHost.Replace("127.0.0.1", "host.docker.internal");
+
+//repositoryHost = "127.0.0.1";
+//repositoryPort = 8001;
+//httpPort = 8003;
 var repositoryUri = new Uri($"http://{repositoryHost}:{repositoryPort}");
 
 var builder = WebApplication.CreateBuilder(args);
@@ -59,11 +63,24 @@ repositoryClient.BaseAddress = repositoryUri;
 MapRoutes();
 
 // setup basic packages within repository
-SetupPackages();
+await SetupPackages();
+
+
+
+
+// test file
+//var text = File.ReadAllText(@"G:\My Drive\FHHAGENBERG\FE\Publications\2024_Eurocast\Presentation\Samples\eurocast2024.3l");
+//try {
+//  var sst = ParseSST(text);
+//  var gr = sst.GetGraph();
+//  Console.WriteLine(string.Join(", ", gr.nodes.Select(x => x.name)));
+//}
+//catch (Exception ex) {
+//  Console.WriteLine(ex.Message);
+//}
 
 // startup
 app.Run();
-
 
 
 void MapRoutes() {
@@ -90,7 +107,7 @@ void MapRoutes() {
       return Results.Ok(pkgNameTags);
     } else {
       Log.Fatal("Could not retrieve any packages from the repository.");
-      return Results.Problem("Could not retrieve any packages from the repository.");
+      return Results.Ok("Could not retrieve any packages from the repository.");
     }     
   });
 
@@ -110,7 +127,7 @@ void MapRoutes() {
     }
     else {
       Log.Fatal($"Could not retrieve the requested descriptions from the repository.");
-      return Results.Problem($"Could not retrieve the requested descriptions from the repository.");
+      return Results.Ok($"Could not retrieve the requested descriptions from the repository.");
     }
   });
 
@@ -124,7 +141,7 @@ void MapRoutes() {
       return Results.Ok(imageNameTags);
     } else {
       Log.Fatal($"Could not retrieve the requested description {id} from the repository.");
-      return Results.Problem($"Could not retrieve the requested description {id} from the repository.");
+      return Results.Ok($"Could not retrieve the requested description {id} from the repository.");
     }
   });
 
@@ -135,7 +152,7 @@ void MapRoutes() {
     }
     catch (Exception exc) {      
       Log.Fatal(exc.Message);
-      return Results.Problem(exc.Message);
+      return Results.Ok(exc.Message);
     }
   });
 
@@ -167,7 +184,7 @@ void MapRoutes() {
       return Results.Ok(fields);
     } catch(Exception exc) {
       Log.Fatal(exc.Message);
-      return Results.Problem(exc.Message);
+      return Results.Ok(exc.Message);
     }
   });
 
@@ -179,7 +196,7 @@ void MapRoutes() {
     }
     catch (Exception exc) {
       Log.Fatal(exc.Message);
-      return Results.Problem(exc.Message);
+      return Results.Ok(exc.Message);
     }
   });
 
@@ -194,7 +211,7 @@ void MapRoutes() {
       return Results.Ok(desc);
     } catch(Exception exc) {
       Log.Fatal(exc.Message);
-      return Results.Problem(exc.Message);
+      return Results.Ok(exc.Message);
     }
   });
 
@@ -210,6 +227,7 @@ ScopedSymbolTable ParseSST(string programText) {
 ScopedSymbolTable IdentifySST(string programText) {
   SeidlParser parser = Utils.TokenizeAndParse(programText);
   Linter linter = new Linter(parser);
+  linter.RepositoryClient = repositoryClient;
   return linter.IdentifyScopedSymbolTable();
 }
 
@@ -240,12 +258,12 @@ async Task SetupPackages() {
         if (pkgIs != null && pkgIs.Any()) {
           packageInformations.AddRange(pkgIs);
         }
-        else {
+        //else {
           // persist description
           var postResponse = await repositoryClient.PostAsJsonAsync("descriptions", desc);          
           if (postResponse.IsSuccessStatusCode) Log.Information("Persisted description.");
           else Log.Fatal(postResponse.ReasonPhrase);
-        }
+        //}
       }
     }
 

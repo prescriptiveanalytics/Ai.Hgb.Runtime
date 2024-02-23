@@ -19,7 +19,7 @@
   <ItemGroup>
     <PackageReference Include="Ai.Hgb.Common.Entities" Version="0.1.5-prerelease-g745b231a4e" />
     <PackageReference Include="Ai.Hgb.Common.Utils" Version="0.1.2-prerelease-g745b231a4e" />
-    <PackageReference Include="Ai.Hgb.Dat.Communication" Version="0.1.4-prerelease-gebc7d23a1b" />
+    <PackageReference Include="Ai.Hgb.Dat.Communication" Version="0.1.5-prerelease-g6a7b89bf94" />
     <PackageReference Include="Ai.Hgb.Dat.Configuration" Version="0.1.5-prerelease-gebc7d23a1b" />
     <PackageReference Include="Ai.Hgb.Dat.Utils" Version="0.1.4-prerelease-gebc7d23a1b" />
     <PackageReference Include="Docker.DotNet" Version="3.125.15" />
