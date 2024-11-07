@@ -21,6 +21,7 @@ if (args.Length == 3) repositoryHost = args[2];
 repositoryHost = repositoryHost.Replace("localhost", "host.docker.internal");
 repositoryHost = repositoryHost.Replace("127.0.0.1", "host.docker.internal");
 
+// dev only:
 //repositoryHost = "127.0.0.1";
 //repositoryPort = 8001;
 //httpPort = 8003;

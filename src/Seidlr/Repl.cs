@@ -42,7 +42,7 @@ namespace Ai.Hgb.Runtime {
     #endregion properties
 
     #region fields
-    private static string[] COMMANDS = { "run", "state", "start", "pause", "stop", "attach", "detach", "cancel", "save", "exit", "q", "quit", "list" };
+    private static string[] COMMANDS = { "run", "demo", "state", "start", "pause", "stop", "attach", "detach", "cancel", "save", "exit", "q", "quit", "list" };
     private static string DOCKER_RUNTIME_ID_PREFIX = "ai.hgb.runtime";
     private static string DOCKER_APPLICATION_ID_PREFIX = "ai.hgb.application";
 
@@ -124,8 +124,17 @@ namespace Ai.Hgb.Runtime {
         else if (cmd.Key == "run") {
           string path = null;
           if (cmd.Value != null && cmd.Value.Count > 0) path = cmd.Value[0];
-          //PerformRun(path).Wait();
-          //PerformRunSidl(path).Wait();
+          if (string.IsNullOrEmpty(path)) {
+            // TODO: look for *.3l inside dir
+          }
+
+          if(!string.IsNullOrEmpty(path)) {
+            PerformRunSeidl(path).Wait();
+            runningTask = Guid.NewGuid().ToString();
+          }
+        }
+        else if (cmd.Key == "demo") {
+          PerformDemo().Wait();
           runningTask = Guid.NewGuid().ToString();
         }
         else if (cmd.Key == "stop") {
@@ -269,6 +278,7 @@ namespace Ai.Hgb.Runtime {
     }
 
     private void StartupLanguageService() {
+      Task.Delay(1000).Wait();
       var portBindings = new Dictionary<string, IList<PortBinding>> { { LanguageServiceImageExposedPort.ToString(), new List<PortBinding>() } };
       portBindings[LanguageServiceImageExposedPort.ToString()].Add(new PortBinding() { HostIP = LanguageServiceUri.Host, HostPort = LanguageServiceUri.Port.ToString() });
       var hostConfig = new HostConfig() { PortBindings = portBindings };
@@ -459,28 +469,29 @@ namespace Ai.Hgb.Runtime {
       }, cts.Token);
     }
 
-    private Task PerformRun(string path) {
+    private Task PerformDemo() {
       return Task.Run(async () =>
       {
-        try {
-          string producerContainerName = DOCKER_APPLICATION_ID_PREFIX + ".demoapps.producer.container";
-          string consumerContainerName = DOCKER_APPLICATION_ID_PREFIX + ".demoapps.consumer.container";
+        try {          
+          string producerContainerName = DOCKER_APPLICATION_ID_PREFIX + ".demoapps.producer.ctn";
+          string consumerContainerName = DOCKER_APPLICATION_ID_PREFIX + ".demoapps.consumer.ctn";
           var consumerTask = dockerClient.Containers.CreateContainerAsync(new CreateContainerParameters()
           {
-            Image = DOCKER_APPLICATION_ID_PREFIX + ".demoapps.consumer.image:latest",
+            Image = DOCKER_APPLICATION_ID_PREFIX + ".demoapps.consumer.img:latest",
             Name = consumerContainerName,
             Cmd = new string[] { "blablu" }
           });
           var producerTask = dockerClient.Containers.CreateContainerAsync(new CreateContainerParameters()
           {
-            Image = DOCKER_APPLICATION_ID_PREFIX + ".demoapps.producer.image:latest",
+            Image = DOCKER_APPLICATION_ID_PREFIX + ".demoapps.producer.img:latest",
             Name = producerContainerName
           });
 
+          string path = Directory.GetCurrentDirectory();
           string localPath = "/configuration2/";
           var parameters = new CreateContainerParameters()
           {
-            Image = DOCKER_APPLICATION_ID_PREFIX + ".demoapps.consumer.image:latest",
+            Image = DOCKER_APPLICATION_ID_PREFIX + ".demoapps.consumer.img:latest",
             Name = consumerContainerName,
             Cmd = new string[] { "blablu" },
             Volumes = new Dictionary<string, EmptyStruct>() { { $"{path}:{localPath}", new EmptyStruct() } }
@@ -510,7 +521,8 @@ namespace Ai.Hgb.Runtime {
       return Task.Run(async () => {
         try {
           IList<ContainerListResponse> containerList = await dockerClient.Containers.ListContainersAsync(new ContainersListParameters() { All = true });
-          foreach (var c in containerList.Where(x => x.Names.Any(y => y.Contains(DOCKER_RUNTIME_ID_PREFIX + ".")))) {
+          var removalContainerList = containerList.Where(x => x.Names.Any(y => y.Contains(DOCKER_RUNTIME_ID_PREFIX + ".") || y.Contains(DOCKER_APPLICATION_ID_PREFIX + ".")));
+          foreach (var c in removalContainerList) {
             await dockerClient.Containers.StopContainerAsync(c.ID, new ContainerStopParameters() { WaitBeforeKillSeconds = 1 });
             await dockerClient.Containers.RemoveContainerAsync(c.ID, new ContainerRemoveParameters() { Force = true });
           }
@@ -539,18 +551,19 @@ namespace Ai.Hgb.Runtime {
         }
       }, cts.Token);
     }
-    //private Task PerformRunSidl(string path) {
-    //  return Task.Run(async () =>
-    //  {
-    //    try {
-    //      var table = ReadSidl(path);
-    //      brokerConfigBase.Routing = CreateRoutingTable(table);
+
+    private Task PerformRunSeidl(string path) {
+      return Task.Run(async () =>
+      {
+        try {
+          //var table = ReadSidl(path);
+          //brokerConfigBase.Routing = CreateRoutingTable(table);
 
 
-    //    }
-    //    catch (Exception ex) { Console.WriteLine(ex.Message); }
-    //  }, cts.Token);
-    //}
+        }
+        catch (Exception ex) { Console.WriteLine(ex.Message); }
+      }, cts.Token);
+    }
 
     //private void TestSidl() {
     //  var table = ReadSidl(null);
@@ -558,7 +571,7 @@ namespace Ai.Hgb.Runtime {
     //  Console.WriteLine("\nSidl:\n");
     //  Console.WriteLine(printout.ToString());
     //}
-    
+
     //private RoutingTable CreateRoutingTable(ScopedSymbolTable table) {
     //  var routing = new RoutingTable();
 
@@ -592,7 +605,7 @@ namespace Ai.Hgb.Runtime {
 
     //  return linter.CreateScopedSymbolTableSecured();
     //}
-    
+
 
     #endregion sandbox
   }

@@ -2,8 +2,8 @@
 using Ai.Hgb.Runtime;
 
 var repl = new Repl {
-  Startup = new List<RuntimeComponents> { RuntimeComponents.Docker, RuntimeComponents.Repository, RuntimeComponents.LanguageService, RuntimeComponents.Broker },
-  //Startup = new List<RuntimeComponents> { RuntimeComponents.Docker, RuntimeComponents.Repository },
+  //Startup = new List<RuntimeComponents> { RuntimeComponents.Docker, RuntimeComponents.Repository, RuntimeComponents.LanguageService, RuntimeComponents.Broker },
+  Startup = new List<RuntimeComponents> { RuntimeComponents.Docker, RuntimeComponents.Repository, RuntimeComponents.LanguageService },
   DockerUri = new Uri("npipe://./pipe/docker_engine"),
   RepositoryUri = new Uri("http://localhost:8001/"),
   LanguageServiceUri = new Uri("http://localhost:8003/"),
@@ -24,7 +24,7 @@ var repl = new Repl {
   BrokerImageExposedWebsocketPort = 5000
 };
 await repl.Run(args);
-
+// tcp:// 10.20.71.151:2376
 
 // TODO:
 // run = run + 3l file or run + main.3l = read sidl file and...
