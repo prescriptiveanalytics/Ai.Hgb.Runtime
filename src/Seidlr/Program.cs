@@ -1,9 +1,10 @@
 ﻿using Ai.Hgb.Dat.Configuration;
 using Ai.Hgb.Runtime;
+using YamlDotNet.Serialization;
 
 var repl = new Repl {
-  //Startup = new List<RuntimeComponents> { RuntimeComponents.Docker, RuntimeComponents.Repository, RuntimeComponents.LanguageService, RuntimeComponents.Broker },
-  Startup = new List<RuntimeComponents> { RuntimeComponents.Docker, RuntimeComponents.Repository, RuntimeComponents.LanguageService },
+  Startup = new List<RuntimeComponents> { RuntimeComponents.Docker, RuntimeComponents.Repository, RuntimeComponents.LanguageService, RuntimeComponents.Broker },
+  //Startup = new List<RuntimeComponents> { RuntimeComponents.Docker, RuntimeComponents.Repository, RuntimeComponents.LanguageService },
   DockerUri = new Uri("npipe://./pipe/docker_engine"),
   RepositoryUri = new Uri("http://localhost:8001/"),
   LanguageServiceUri = new Uri("http://localhost:8003/"),
@@ -23,7 +24,34 @@ var repl = new Repl {
   BrokerImageExposedMqttPort = 1883,
   BrokerImageExposedWebsocketPort = 5000
 };
-await repl.Run(args);
+
+var dser = new DeserializerBuilder()
+  .IgnoreFields()
+  .IgnoreUnmatchedProperties()
+  .Build();
+
+if(args == null || args.Length == 0) {
+
+  // search for default config...
+  // parse config
+  // await repl.Run(args);
+
+
+  // error case:
+  Console.WriteLine("No configuration found. Bye bye.\n");
+} else {
+  // read first arg (=config)
+  // remove first arg
+}
+
+
+
+
+
+
+
+
+
 // tcp:// 10.20.71.151:2376
 
 // TODO:

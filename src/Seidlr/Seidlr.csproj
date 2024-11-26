@@ -15,6 +15,10 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+	<ItemGroup>
+	  <None Remove="configurations\repl\config.json" />
+	  <None Remove="configurations\repl\config.yml" />
+	</ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Ai.Hgb.Common.Entities" Version="0.1.5-prerelease-g745b231a4e" />
@@ -23,6 +27,7 @@
     <PackageReference Include="Ai.Hgb.Dat.Configuration" Version="0.1.5-prerelease-gebc7d23a1b" />
     <PackageReference Include="Ai.Hgb.Dat.Utils" Version="0.1.4-prerelease-gebc7d23a1b" />
     <PackageReference Include="Docker.DotNet" Version="3.125.15" />
+    <PackageReference Include="YamlDotNet" Version="16.2.0" />
   </ItemGroup>
 
 </Project>
