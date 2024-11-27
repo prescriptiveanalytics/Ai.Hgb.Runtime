@@ -3,23 +3,53 @@ using Ai.Hgb.Dat.Communication;
 using Ai.Hgb.Dat.Configuration;
 using Docker.DotNet;
 using Docker.DotNet.Models;
-using System.IO;
 using System.Net.Http.Json;
 using System.Reflection;
 
 namespace Ai.Hgb.Runtime {
 
-  public enum RuntimeComponents {
-    Docker,
-    Repository,
-    LanguageService,
-    Broker
+  //public class RuntimeComponents {
+  //  public static string Docker { get { return "docker"; } }
+  //  public static string Repository { get { return "repository"; } }
+  //  public static string LanguageService { get { return "languageserver"; } }
+  //  public static string Broker { get { return "broker"; } }
+  //}
+
+  public class RuntimeComponent : Enumeration {
+    public static RuntimeComponent Docker => new(1, "docker");
+    public static RuntimeComponent Repository => new(2, "repository");
+    public static RuntimeComponent LanguageService => new(3, "languageserver");
+    public static RuntimeComponent Broker => new(4, "broker");
+
+    public RuntimeComponent(int id, string name) : base(id, name) { }
+  }
+
+  public class ReplConfiguration {
+    public List<string> Startup { get; set; }
+    public string DockerUri { get; set; }
+    public string RepositoryUri { get; set; }
+    public string LanguageServiceUri { get; set; }
+    public string BrokerUri { get; set; }
+    public string BrokerWebsocketUri { get; set; }
+    public string RepositoryImageName { get; set; }
+    public string RepositoryImageTag { get; set; }
+    public string RepositoryContainerName { get; set; }
+    public int RepositoryImageExposedPort { get; set; }
+    public string LanguageServiceImageName { get; set; }
+    public string LanguageServiceImageTag { get; set; }
+    public string LanguageServiceContainerName { get; set; }
+    public int LanguageServiceImageExposedPort { get; set; }
+    public string BrokerImageName { get; set; }
+    public string BrokerImageTag { get; set; }
+    public string BrokerContainerName { get; set; }
+    public int BrokerImageExposedMqttPort { get; set; }
+    public int BrokerImageExposedWebsocketPort { get; set; }
   }
 
   public class Repl {
 
     #region properties
-    public List<RuntimeComponents> Startup { get; set; }
+    public List<RuntimeComponent> Startup { get; set; }
     public Uri DockerUri { get; set; }
     public Uri RepositoryUri { get; set; }
     public Uri LanguageServiceUri { get; set; }
@@ -66,6 +96,40 @@ namespace Ai.Hgb.Runtime {
     public Repl() {
       cts = new CancellationTokenSource();
       exit = false;
+    }
+
+    public Repl(ReplConfiguration config) : base() {
+      Startup = new List<RuntimeComponent>();
+      foreach(var i in config.Startup) {
+        if (RuntimeComponent.Docker.NameEquals(i.ToLower())) Startup.Add(RuntimeComponent.Docker);
+        else if (RuntimeComponent.Repository.NameEquals(i.ToLower())) Startup.Add(RuntimeComponent.Repository);
+        else if (RuntimeComponent.LanguageService.NameEquals(i.ToLower())) Startup.Add(RuntimeComponent.LanguageService);
+        else if (RuntimeComponent.Broker.NameEquals(i.ToLower())) Startup.Add(RuntimeComponent.Broker);
+      }
+      
+      DockerUri = new Uri(config.DockerUri);
+      RepositoryUri = new Uri(config.RepositoryUri);
+      LanguageServiceUri = new Uri(config.LanguageServiceUri);
+      var brokerUri = config.BrokerUri.Split(':');
+      BrokerUri = new HostAddress(brokerUri[0], int.Parse(brokerUri[1]));
+      var brokerWsUri = config.BrokerWebsocketUri.Split(':');
+      BrokerWebsocketUri = new HostAddress(brokerWsUri[1], int.Parse(brokerWsUri[1]));
+
+      RepositoryImageName = config.RepositoryImageName;
+      RepositoryImageTag = config.RepositoryImageTag;
+      RepositoryContainerName = config.RepositoryContainerName;
+      RepositoryImageExposedPort = config.RepositoryImageExposedPort;
+
+      LanguageServiceImageName = config.LanguageServiceImageName;
+      LanguageServiceImageTag = config.LanguageServiceImageTag;
+      LanguageServiceContainerName = config.LanguageServiceContainerName;
+      LanguageServiceImageExposedPort = config.LanguageServiceImageExposedPort;
+
+      BrokerImageName = config.BrokerImageName;
+      BrokerImageTag = config.BrokerImageTag;
+      BrokerContainerName = config.BrokerContainerName;
+      BrokerImageExposedMqttPort = config.BrokerImageExposedMqttPort;
+      BrokerImageExposedWebsocketPort = config.BrokerImageExposedWebsocketPort;
     }
 
     #region core
@@ -160,13 +224,13 @@ namespace Ai.Hgb.Runtime {
     #region runtime
     private void StartupRuntime() {
       foreach(var component in Startup) {
-        if(component == RuntimeComponents.Docker) StartupDocker();
-        else if (component == RuntimeComponents.Repository) StartupRepository();
-        else if (component == RuntimeComponents.LanguageService) StartupLanguageService();
-        else if (component == RuntimeComponents.Broker) StartupBroker();
+        if(component == RuntimeComponent.Docker) StartupDocker();
+        else if (component == RuntimeComponent.Repository) StartupRepository();
+        else if (component == RuntimeComponent.LanguageService) StartupLanguageService();
+        else if (component == RuntimeComponent.Broker) StartupBroker();
       }
 
-      if(Startup.Contains(RuntimeComponents.Repository) && Startup.Contains(RuntimeComponents.LanguageService)) {
+      if(Startup.Contains(RuntimeComponent.Repository) && Startup.Contains(RuntimeComponent.LanguageService)) {
         InitRepository();
       }
     }
@@ -175,10 +239,10 @@ namespace Ai.Hgb.Runtime {
       var teardown = Startup.ToList();
       teardown.Reverse();
       foreach (var component in teardown) {
-        if (component == RuntimeComponents.Docker) TeardownDocker();
-        else if (component == RuntimeComponents.Repository) TeardownRepository();
-        else if (component == RuntimeComponents.LanguageService) TeardownLanguageService();
-        else if (component == RuntimeComponents.Broker) TeardownBroker();
+        if (component == RuntimeComponent.Docker) TeardownDocker();
+        else if (component == RuntimeComponent.Repository) TeardownRepository();
+        else if (component == RuntimeComponent.LanguageService) TeardownLanguageService();
+        else if (component == RuntimeComponent.Broker) TeardownBroker();
       }
     }
 

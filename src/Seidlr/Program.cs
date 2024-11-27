@@ -2,46 +2,53 @@
 using Ai.Hgb.Runtime;
 using YamlDotNet.Serialization;
 
-var repl = new Repl {
-  Startup = new List<RuntimeComponents> { RuntimeComponents.Docker, RuntimeComponents.Repository, RuntimeComponents.LanguageService, RuntimeComponents.Broker },
-  //Startup = new List<RuntimeComponents> { RuntimeComponents.Docker, RuntimeComponents.Repository, RuntimeComponents.LanguageService },
-  DockerUri = new Uri("npipe://./pipe/docker_engine"),
-  RepositoryUri = new Uri("http://localhost:8001/"),
-  LanguageServiceUri = new Uri("http://localhost:8003/"),
-  BrokerUri = new HostAddress("127.0.0.1", 1883),
-  BrokerWebsocketUri = new HostAddress("127.0.0.1", 5000),
-  RepositoryImageName = "ai.hgb.runtime.repository.img",
-  RepositoryImageTag = "latest",
-  RepositoryImageExposedPort = 7001,
-  RepositoryContainerName = "ai.hgb.runtime.repository.ctn",
-  LanguageServiceImageName = "ai.hgb.runtime.languageservice.img",
-  LanguageServiceImageTag = "latest",
-  LanguageServiceImageExposedPort = 7003,
-  LanguageServiceContainerName = "ai.hgb.runtime.languageservice.ctn",
-  BrokerImageName = "ai.hgb.runtime.broker.img",
-  BrokerImageTag = "latest",
-  BrokerContainerName = "ai.hgb.runtime.broker.ctn",
-  BrokerImageExposedMqttPort = 1883,
-  BrokerImageExposedWebsocketPort = 5000
-};
+//var repl = new Repl {
+//  Startup = new List<RuntimeComponents> { RuntimeComponents.Docker, RuntimeComponents.Repository, RuntimeComponents.LanguageService, RuntimeComponents.Broker },
+//  //Startup = new List<RuntimeComponents> { RuntimeComponents.Docker, RuntimeComponents.Repository, RuntimeComponents.LanguageService },
+//  DockerUri = new Uri("npipe://./pipe/docker_engine"),
+//  RepositoryUri = new Uri("http://localhost:8001/"),
+//  LanguageServiceUri = new Uri("http://localhost:8003/"),
+//  BrokerUri = new HostAddress("127.0.0.1", 1883),
+//  BrokerWebsocketUri = new HostAddress("127.0.0.1", 5000),
+//  RepositoryImageName = "ai.hgb.runtime.repository.img",
+//  RepositoryImageTag = "latest",
+//  RepositoryImageExposedPort = 7001,
+//  RepositoryContainerName = "ai.hgb.runtime.repository.ctn",
+//  LanguageServiceImageName = "ai.hgb.runtime.languageservice.img",
+//  LanguageServiceImageTag = "latest",
+//  LanguageServiceImageExposedPort = 7003,
+//  LanguageServiceContainerName = "ai.hgb.runtime.languageservice.ctn",
+//  BrokerImageName = "ai.hgb.runtime.broker.img",
+//  BrokerImageTag = "latest",
+//  BrokerContainerName = "ai.hgb.runtime.broker.ctn",
+//  BrokerImageExposedMqttPort = 1883,
+//  BrokerImageExposedWebsocketPort = 5000
+//};
 
 var dser = new DeserializerBuilder()
   .IgnoreFields()
   .IgnoreUnmatchedProperties()
   .Build();
 
-if(args == null || args.Length == 0) {
+ReplConfiguration config = null;
+string configUri = null;
 
-  // search for default config...
-  // parse config
-  // await repl.Run(args);
+if ((args == null || args.Length == 0) && File.Exists(@"configurations/repl/config.yml")) {
+  configUri = @"configurations/repl/config.yml";
+}
+else if (File.Exists(args[0])) {
+  configUri = args[0];
+  args = args.Skip(1).ToArray();
+}
 
-
-  // error case:
+if (configUri != null) {
+  string doc = Parser.ReadText(@"configurations/repl/config.yml");
+  config = dser.Deserialize<ReplConfiguration>(doc);
+  var repl = new Repl(config);
+  await repl.Run(args);
+}
+else {
   Console.WriteLine("No configuration found. Bye bye.\n");
-} else {
-  // read first arg (=config)
-  // remove first arg
 }
 
 
