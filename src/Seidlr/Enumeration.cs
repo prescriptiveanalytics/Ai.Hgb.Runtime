@@ -33,6 +33,14 @@ namespace Ai.Hgb.Common.Entities {
       return typeMatches && valueMatches;
     }
 
+    public static bool operator ==(Enumeration left, Enumeration right) {
+      return left.Equals(right);
+    }
+
+    public static bool operator !=(Enumeration left, Enumeration right) {
+      return !left.Equals(right);
+    }
+
     public int CompareTo(object other) => Id.CompareTo(((Enumeration)other).Id);
 
     public bool NameEquals(object obj) {      

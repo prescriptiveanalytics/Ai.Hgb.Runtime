@@ -98,7 +98,10 @@ namespace Ai.Hgb.Runtime {
       exit = false;
     }
 
-    public Repl(ReplConfiguration config) : base() {
+    public Repl(ReplConfiguration config) {
+      cts = new CancellationTokenSource();
+      exit = false;
+
       Startup = new List<RuntimeComponent>();
       foreach(var i in config.Startup) {
         if (RuntimeComponent.Docker.NameEquals(i.ToLower())) Startup.Add(RuntimeComponent.Docker);
@@ -113,7 +116,7 @@ namespace Ai.Hgb.Runtime {
       var brokerUri = config.BrokerUri.Split(':');
       BrokerUri = new HostAddress(brokerUri[0], int.Parse(brokerUri[1]));
       var brokerWsUri = config.BrokerWebsocketUri.Split(':');
-      BrokerWebsocketUri = new HostAddress(brokerWsUri[1], int.Parse(brokerWsUri[1]));
+      BrokerWebsocketUri = new HostAddress(brokerWsUri[0], int.Parse(brokerWsUri[1]));
 
       RepositoryImageName = config.RepositoryImageName;
       RepositoryImageTag = config.RepositoryImageTag;
