@@ -3,6 +3,8 @@ using Ai.Hgb.Seidl.Data;
 using Ai.Hgb.Seidl.Processor;
 using Serilog;
 using System.Reflection;
+using System.Text.Encodings.Web;
+using System.Text.Json;
 
 #region fields
 // fields and default values
@@ -211,6 +213,84 @@ void MapRoutes() {
       };
       return Results.Ok(desc);
     } catch(Exception exc) {
+      Log.Fatal(exc.Message);
+      return Results.Ok(exc.Message);
+    }
+  });
+
+  app.MapPost("/translate/nodetypes", (ProgramRecord req) => {
+    try {
+      var sst = ParseSST(req.programText);
+      var s = sst.Global;
+      var nodes = sst[s].Where(x => x.Type is Node && x.IsTypedef).Select(x => new NodeRecord(x.Name));      
+      return Results.Ok(nodes);
+    }
+    catch (Exception exc) {
+      Log.Fatal(exc.Message);
+      return Results.Ok(exc.Message);
+    }
+  });
+
+  app.MapPost("/translate/nodes", (ProgramRecord req) => {
+    try {
+      var sst = ParseSST(req.programText);
+      var s = sst.Global;
+      var nodes = sst[s].Where(x => x.Type is Node && !x.IsTypedef).Select(x => new NodeRecord(x.Name));
+      return Results.Ok(nodes);
+    }
+    catch (Exception exc) {
+      Log.Fatal(exc.Message);
+      return Results.Ok(exc.Message);
+    }
+  });
+
+  app.MapPost("/translate/initializations", (ProgramRecord req) => {
+    try {
+      var sst = ParseSST(req.programText);
+      var s = sst.Global;
+      var nodetypeSymbols = sst[s].Where(x => x.Type is Node && x.IsTypedef);
+      var nodeSymbols = sst[s].Where(x => x.Type is Node && !x.IsTypedef);
+      var inits = new List<InitializationRecord>();
+
+      foreach (var ns in nodeSymbols) {        
+        // TODO: translate properties to JSON string
+        var nst = (Node)ns.Type;
+
+        var propertyDict = new Dictionary<string, object>();
+        foreach(var prop in nst.Properties) {
+
+          // v0
+          //object parsedValue = null;
+          //if (prop.Value is Ai.Hgb.Seidl.Data.String) {
+          //  var type = (Ai.Hgb.Seidl.Data.String)prop.Value;
+          //  parsedValue = type.Value;
+          //} else if(prop.Value is Ai.Hgb.Seidl.Data.Integer) {
+          //  var type = (Ai.Hgb.Seidl.Data.Integer)prop.Value;
+          //  parsedValue = type.Value;
+          //} else if(prop.Value is Ai.Hgb.Seidl.Data.Float) {
+          //  var type = (Ai.Hgb.Seidl.Data.Float)prop.Value;
+          //  parsedValue = type.Value;
+          //} else if (prop.Value is Ai.Hgb.Seidl.Data.Bool) {
+          //  var type = (Ai.Hgb.Seidl.Data.Bool)prop.Value;
+          //  parsedValue = type.Value;
+          //}
+          //propertyDict.Add(prop.Key, parsedValue);
+
+          // v1
+          propertyDict.Add(prop.Key, prop.Value.GetValue());
+
+        }        
+        var jsonText = JsonSerializer.Serialize(propertyDict);
+        //var jsonText = JsonSerializer.Serialize(propertyDict, new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+
+        // TODO: create routing table from in/output
+
+        inits.Add(new InitializationRecord(ns.Name, nst.ImageName, nst.ImageTag, jsonText, new RoutingTable()));
+      }
+
+      return Results.Ok(inits);
+    }
+    catch (Exception exc) {
       Log.Fatal(exc.Message);
       return Results.Ok(exc.Message);
     }

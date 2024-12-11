@@ -2,29 +2,6 @@
 using Ai.Hgb.Runtime;
 using YamlDotNet.Serialization;
 
-//var repl = new Repl {
-//  Startup = new List<RuntimeComponents> { RuntimeComponents.Docker, RuntimeComponents.Repository, RuntimeComponents.LanguageService, RuntimeComponents.Broker },
-//  //Startup = new List<RuntimeComponents> { RuntimeComponents.Docker, RuntimeComponents.Repository, RuntimeComponents.LanguageService },
-//  DockerUri = new Uri("npipe://./pipe/docker_engine"),
-//  RepositoryUri = new Uri("http://localhost:8001/"),
-//  LanguageServiceUri = new Uri("http://localhost:8003/"),
-//  BrokerUri = new HostAddress("127.0.0.1", 1883),
-//  BrokerWebsocketUri = new HostAddress("127.0.0.1", 5000),
-//  RepositoryImageName = "ai.hgb.runtime.repository.img",
-//  RepositoryImageTag = "latest",
-//  RepositoryImageExposedPort = 7001,
-//  RepositoryContainerName = "ai.hgb.runtime.repository.ctn",
-//  LanguageServiceImageName = "ai.hgb.runtime.languageservice.img",
-//  LanguageServiceImageTag = "latest",
-//  LanguageServiceImageExposedPort = 7003,
-//  LanguageServiceContainerName = "ai.hgb.runtime.languageservice.ctn",
-//  BrokerImageName = "ai.hgb.runtime.broker.img",
-//  BrokerImageTag = "latest",
-//  BrokerContainerName = "ai.hgb.runtime.broker.ctn",
-//  BrokerImageExposedMqttPort = 1883,
-//  BrokerImageExposedWebsocketPort = 5000
-//};
-
 var dser = new DeserializerBuilder()
   .IgnoreFields()
   .IgnoreUnmatchedProperties()

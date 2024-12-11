@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Ai.Hgb.Common.Entities {
+namespace Ai.Hgb.Runtime {
   public abstract class Enumeration : IComparable {
     public string Name { get; private set; }
 

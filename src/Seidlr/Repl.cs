@@ -1,19 +1,19 @@
 ﻿using Ai.Hgb.Common.Entities;
 using Ai.Hgb.Dat.Communication;
 using Ai.Hgb.Dat.Configuration;
+using Ai.Hgb.Seidl.Data;
+using Ai.Hgb.Seidl.Processor;
 using Docker.DotNet;
 using Docker.DotNet.Models;
+using System.Collections.Generic;
+using System.IO;
 using System.Net.Http.Json;
 using System.Reflection;
+using System.Runtime.Intrinsics.X86;
 
 namespace Ai.Hgb.Runtime {
 
-  //public class RuntimeComponents {
-  //  public static string Docker { get { return "docker"; } }
-  //  public static string Repository { get { return "repository"; } }
-  //  public static string LanguageService { get { return "languageserver"; } }
-  //  public static string Broker { get { return "broker"; } }
-  //}
+  #region data structures
 
   public class RuntimeComponent : Enumeration {
     public static RuntimeComponent Docker => new(1, "docker");
@@ -46,6 +46,8 @@ namespace Ai.Hgb.Runtime {
     public int BrokerImageExposedWebsocketPort { get; set; }
   }
 
+  #endregion data structures
+
   public class Repl {
 
     #region properties
@@ -72,7 +74,7 @@ namespace Ai.Hgb.Runtime {
     #endregion properties
 
     #region fields
-    private static string[] COMMANDS = { "run", "demo", "state", "start", "pause", "stop", "attach", "detach", "cancel", "save", "exit", "q", "quit", "list" };
+    private static string[] COMMANDS = { "run", "runpc", "demo", "state", "start", "pause", "stop", "attach", "detach", "cancel", "save", "exit", "q", "quit", "list" };
     private static string DOCKER_RUNTIME_ID_PREFIX = "ai.hgb.runtime";
     private static string DOCKER_APPLICATION_ID_PREFIX = "ai.hgb.application";
 
@@ -192,13 +194,20 @@ namespace Ai.Hgb.Runtime {
           string path = null;
           if (cmd.Value != null && cmd.Value.Count > 0) path = cmd.Value[0];
           if (string.IsNullOrEmpty(path)) {
-            // TODO: look for *.3l inside dir
+            // look for *.3l inside current dir and subdirs
+            var files = Directory.GetFiles(Directory.GetCurrentDirectory(), "*.3l", SearchOption.AllDirectories);
+            if(files.Length > 0) path = files[0];
           }
 
           if(!string.IsNullOrEmpty(path)) {
             PerformRunSeidl(path).Wait();
             runningTask = Guid.NewGuid().ToString();
           }
+        }
+        else if (cmd.Key == "runpc") {
+          string path = @"..\..\..\..\DemoApps\main.3l";
+          PerformRunSeidl(path).Wait();
+          runningTask = Guid.NewGuid().ToString();
         }
         else if (cmd.Key == "demo") {
           PerformDemo().Wait();
@@ -449,6 +458,8 @@ namespace Ai.Hgb.Runtime {
     }
     #endregion runtime
 
+    #region commands
+
     private Task PerformList() {
       return Task.Run(async () =>
       {
@@ -536,52 +547,7 @@ namespace Ai.Hgb.Runtime {
       }, cts.Token);
     }
 
-    private Task PerformDemo() {
-      return Task.Run(async () =>
-      {
-        try {          
-          string producerContainerName = DOCKER_APPLICATION_ID_PREFIX + ".demoapps.producer.ctn";
-          string consumerContainerName = DOCKER_APPLICATION_ID_PREFIX + ".demoapps.consumer.ctn";
-          var consumerTask = dockerClient.Containers.CreateContainerAsync(new CreateContainerParameters()
-          {
-            Image = DOCKER_APPLICATION_ID_PREFIX + ".demoapps.consumer.img:latest",
-            Name = consumerContainerName,
-            Cmd = new string[] { "blablu" }
-          });
-          var producerTask = dockerClient.Containers.CreateContainerAsync(new CreateContainerParameters()
-          {
-            Image = DOCKER_APPLICATION_ID_PREFIX + ".demoapps.producer.img:latest",
-            Name = producerContainerName
-          });
-
-          string path = Directory.GetCurrentDirectory();
-          string localPath = "/configuration2/";
-          var parameters = new CreateContainerParameters()
-          {
-            Image = DOCKER_APPLICATION_ID_PREFIX + ".demoapps.consumer.img:latest",
-            Name = consumerContainerName,
-            Cmd = new string[] { "blablu" },
-            Volumes = new Dictionary<string, EmptyStruct>() { { $"{path}:{localPath}", new EmptyStruct() } }
-          };
-          CreateContainerResponse consumer = consumerTask.Result;
-          CreateContainerResponse producer = producerTask.Result;
-
-          // start containers          
-          var consumerStart = dockerClient.Containers.StartContainerAsync(consumer.ID, new ContainerStartParameters());
-          var producerStart = dockerClient.Containers.StartContainerAsync(producer.ID, new ContainerStartParameters());
-
-          cts.Token.ThrowIfCancellationRequested();
-        }
-        catch (Exception ex) {
-        }
-        finally {
-        }
-      }, cts.Token);
-    }
-
-    private Task PerformStop() {
-      return Task.Run(async () => { });
-    }
+    #endregion commands
 
     #region helper
     private Task ClearupContainers() {
@@ -623,7 +589,68 @@ namespace Ai.Hgb.Runtime {
       return Task.Run(async () =>
       {
         try {
-          //var table = ReadSidl(path);
+          string text = File.ReadAllText(path);
+          var pr = new ProgramRecord(text);
+
+          var postResponse = await languageServiceClient.PostAsJsonAsync("translate/initializations", pr);
+          if (postResponse.IsSuccessStatusCode) {
+            Console.WriteLine(postResponse.StatusCode);
+            var inits = await postResponse.Content.ReadFromJsonAsync<List<InitializationRecord>>();
+            Console.WriteLine(inits.Count);
+            Console.WriteLine(string.Join('\n', inits.Select(x => x.name + " (" + x.typeImageName + ":" + x.typeImageTag + ")")));
+            
+            var containerTasks = new List<Task<CreateContainerResponse>>();
+            foreach(var i in inits) {
+              containerTasks.Add(dockerClient.Containers.CreateContainerAsync(new CreateContainerParameters()
+              {
+                Image = i.typeImageName + ":" + i.typeImageTag,
+                Name = i.typeImageName + "." + i.name,
+                Cmd = new string[] { i.parameterJson }
+              }));
+            }
+
+            // wait for setup
+            await Task.WhenAll(containerTasks);
+            
+            // start containers
+            foreach(var t in containerTasks) {
+              dockerClient.Containers.StartContainerAsync(t.Result.ID, new ContainerStartParameters());
+            }
+          }
+          else {
+            Console.WriteLine(postResponse.StatusCode);
+          }
+
+
+          // old:          
+          //var parser = Utils.TokenizeAndParse(text);
+          //var linter = new Linter(parser);
+          //linter.ProgramTextUrl = path;
+
+          //var table = linter.CreateScopedSymbolTableSecured();
+
+          //Console.WriteLine("\n\nTable:\n********************************\n");
+          //var tabletext = table.Print(null);
+          //Console.WriteLine(tabletext.ToString());
+
+
+          //Console.WriteLine("\n\nGraph:\n********************************\n");
+          //var gr = table.GetGraph();
+          //Console.WriteLine(string.Join(", ", gr.nodes));
+
+          //var sst = table;
+          //var s = sst.Global;
+          //var nodetypeSymbols = sst[s].Where(x => x.Type is Node && x.IsTypedef);
+          //var nodeSymbols = sst[s].Where(x => x.Type is Node && !x.IsTypedef);
+          //var inits = new List<InitializationRecord>();
+
+          //foreach (var ns in nodeSymbols) {
+          //  // TODO: translate properties to JSON string
+          //  // TODO: create routing table from in/output
+          //  var nst = (Node)ns.Type;
+          //  inits.Add(new InitializationRecord(ns.Name, nst.ImageName, nst.ImageTag, "", new RoutingTable()));
+          //}
+
           //brokerConfigBase.Routing = CreateRoutingTable(table);
 
 
@@ -663,17 +690,81 @@ namespace Ai.Hgb.Runtime {
     //  return routing;
     //}
 
-    //private ScopedSymbolTable ReadSidl(string path) {
-    //  if (string.IsNullOrEmpty(path)) path = @"..\..\..\..\DemoApps\main.3l";
-    //  string text = File.ReadAllText(path);      
-    //  var parser = Utils.TokenizeAndParse(text);
-    //  var linter = new Linter(parser);
-    //  linter.ProgramTextUrl = path;
+    private ScopedSymbolTable ReadSeidl(string path) {
+      if (string.IsNullOrEmpty(path)) path = @"..\..\..\..\DemoApps\main.3l";
+      string text = File.ReadAllText(path);
+      var parser = Utils.TokenizeAndParse(text);
+      var linter = new Linter(parser);
+      linter.ProgramTextUrl = path;
 
-    //  return linter.CreateScopedSymbolTableSecured();
-    //}
+      return linter.CreateScopedSymbolTableSecured();
+    }
 
 
     #endregion sandbox
+
+    #region demo
+
+    private Task PerformDemo() {
+      return Task.Run(async () =>
+      {
+        try {
+          string producerContainerName = DOCKER_APPLICATION_ID_PREFIX + ".demoapps.producer.ctn";
+          string consumerContainerName = DOCKER_APPLICATION_ID_PREFIX + ".demoapps.consumer.ctn";
+          var consumerTask = dockerClient.Containers.CreateContainerAsync(new CreateContainerParameters()
+          {
+            Image = DOCKER_APPLICATION_ID_PREFIX + ".demoapps.consumer.img:latest",
+            Name = consumerContainerName,
+            Cmd = new string[] { "Consumer!!!" }    ,            
+          });
+          
+          string path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+          path = Path.Join(path, "configurations");
+          path = Path.Join(path, "broker");
+          var vol = await dockerClient.Volumes.CreateAsync(new VolumesCreateParameters()
+          {
+            Name = producerContainerName + ".vol"
+          });
+          vol.Mountpoint = path;
+
+
+          var producerTask = dockerClient.Containers.CreateContainerAsync(new CreateContainerParameters()
+          {
+            Image = DOCKER_APPLICATION_ID_PREFIX + ".demoapps.producer.img:latest",
+            Name = producerContainerName,
+            Cmd = new string[] { "Producer!!!" },            
+            Volumes = new Dictionary<string, EmptyStruct>() { { vol.Name + ":/configurations/broker", new EmptyStruct() } }            
+          });
+
+          //string path = Directory.GetCurrentDirectory();
+          //string localPath = "/configuration2/";
+          //var parameters = new CreateContainerParameters()
+          //{
+          //  Image = DOCKER_APPLICATION_ID_PREFIX + ".demoapps.consumer.img:latest",
+          //  Name = consumerContainerName,
+          //  Cmd = new string[] { "blablu" },
+          //  Volumes = new Dictionary<string, EmptyStruct>() { { $"{path}:{localPath}", new EmptyStruct() } }
+          //};
+          CreateContainerResponse consumer = consumerTask.Result;
+          CreateContainerResponse producer = producerTask.Result;
+
+          // start containers          
+          var consumerStart = dockerClient.Containers.StartContainerAsync(consumer.ID, new ContainerStartParameters());
+          var producerStart = dockerClient.Containers.StartContainerAsync(producer.ID, new ContainerStartParameters());
+
+          cts.Token.ThrowIfCancellationRequested();
+        }
+        catch (Exception ex) {
+        }
+        finally {
+        }
+      }, cts.Token);
+    }
+
+    private Task PerformStop() {
+      return Task.Run(async () => { });
+    }
+
+    #endregion demo
   }
 }

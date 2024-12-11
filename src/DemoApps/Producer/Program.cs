@@ -1,5 +1,9 @@
 ﻿using Ai.Hgb.Dat.Communication;
 using Ai.Hgb.Dat.Configuration;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+
 
 Console.WriteLine("Producer\n");
 
@@ -11,13 +15,15 @@ SocketConfiguration internalSocketConfig, externalSocketConfig;
 // load internal config
 var internalConfig = Parser.Parse<SocketConfiguration>("./configurations/Producer.yml");
 
+Console.WriteLine(string.Join('\n', args));
+Parameters parameters = null;
 if (args.Length == 1) {
-  // TODO: parse parameters
+  try {
+    parameters = JsonSerializer.Deserialize<Parameters>(args[0]);
+    Console.WriteLine(parameters);
+  }
+  catch (Exception ex) { Console.WriteLine(ex.Message); }
 }
-if(args.Length == 2) {
-  // TODO: parse external socket config
-}
-
 
 var address = new HostAddress(hostName, hostPort);
 var converter = new JsonPayloadConverter();
@@ -39,10 +45,10 @@ int no = 0;
 
 // v2
 try {
-  while (!cts.Token.IsCancellationRequested) {
+  while (!cts.Token.IsCancellationRequested && no < parameters.DocCount) {
     Task.Delay(1500 + rnd.Next(1000)).Wait();
     no++;
-    socket.Publish("docs/all", new Document("id" + no, socket.Configuration.Name, "Lorem ipsum..."));
+    socket.Publish("docs/all", new Document("id" + no, socket.Configuration.Name, parameters.DocPrefix + "Lorem ipsum..."));
     Console.WriteLine("Producer: published new document.");
   }
 }
@@ -65,5 +71,20 @@ public struct Document {
 
   public override string ToString() {
     return $"Id: {Id}, author: {Author}";
+  }
+}
+
+public class Parameters {
+  [JsonPropertyName("name")]
+  public string Name { get; set; }
+  [JsonPropertyName("description")]
+  public string Description { get; set; }
+  [JsonPropertyName("docCount")]
+  public int DocCount { get; set; }
+  [JsonPropertyName("docPrefix")]
+  public string DocPrefix { get; set; }
+
+  public override string ToString() {
+    return $"{Name}: DocCount={DocCount}, DocPrefix={DocPrefix}";
   }
 }

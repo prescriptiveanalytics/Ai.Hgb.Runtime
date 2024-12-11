@@ -1,11 +1,8 @@
 
-# document pub sub demo
-# #####################
+ai.hgb.packages.demoapps.procon:latest
 
-import ai.hgb.packages.base:latest
-import ai.hgb.packages.base.network:latest
-
-name = "ai.hgb.packages.demoapps.procon"
+# import ai.hgb.packages.base:latest
+# import ai.hgb.packages.base.network:latest
 
 host = "127.0.0.1"
 port = 1883
@@ -21,15 +18,19 @@ struct Document {
 message DocumentMessage { Document payload }
 
 nodetype Producer {
+  image ai.hgb.application.demoapps.producer.img:latest
   output DocumentMessage docs
+  property int docCount
+  property string docPrefix
 }
 
 nodetype Consumer {
+  image ai.hgb.application.demoapps.consumer.img:latest
   input DocumentMessage docs
 }
 
-node Producer pro
-node Consumer con
+node Producer pro ( docCount = 100, docPrefix = "Producer says..." )
+node Consumer con ()
 
 pro.docs --> con.docs
 
