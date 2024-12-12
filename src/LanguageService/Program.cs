@@ -253,39 +253,17 @@ void MapRoutes() {
       var inits = new List<InitializationRecord>();
 
       foreach (var ns in nodeSymbols) {        
-        // TODO: translate properties to JSON string
+        // translate properties to dict
         var nst = (Node)ns.Type;
-
         var propertyDict = new Dictionary<string, object>();
         foreach(var prop in nst.Properties) {
-
-          // v0
-          //object parsedValue = null;
-          //if (prop.Value is Ai.Hgb.Seidl.Data.String) {
-          //  var type = (Ai.Hgb.Seidl.Data.String)prop.Value;
-          //  parsedValue = type.Value;
-          //} else if(prop.Value is Ai.Hgb.Seidl.Data.Integer) {
-          //  var type = (Ai.Hgb.Seidl.Data.Integer)prop.Value;
-          //  parsedValue = type.Value;
-          //} else if(prop.Value is Ai.Hgb.Seidl.Data.Float) {
-          //  var type = (Ai.Hgb.Seidl.Data.Float)prop.Value;
-          //  parsedValue = type.Value;
-          //} else if (prop.Value is Ai.Hgb.Seidl.Data.Bool) {
-          //  var type = (Ai.Hgb.Seidl.Data.Bool)prop.Value;
-          //  parsedValue = type.Value;
-          //}
-          //propertyDict.Add(prop.Key, parsedValue);
-
-          // v1
           propertyDict.Add(prop.Key, prop.Value.GetValue());
-
-        }        
-        var jsonText = JsonSerializer.Serialize(propertyDict);
-        //var jsonText = JsonSerializer.Serialize(propertyDict, new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+        }
 
         // TODO: create routing table from in/output
 
-        inits.Add(new InitializationRecord(ns.Name, nst.ImageName, nst.ImageTag, jsonText, new RoutingTable()));
+        
+        inits.Add(new InitializationRecord(ns.Name, nst.ImageName, nst.ImageTag, propertyDict, new RoutingTable()));
       }
 
       return Results.Ok(inits);
@@ -367,4 +345,32 @@ async Task SetupPackages() {
     Log.Fatal(exc.Message);
     Console.WriteLine(exc.Message);
   }
+}
+
+RoutingTable GetRoutingTable(ScopedSymbolTable sst) {
+  var rt = new RoutingTable();
+
+  // loop over all node instances
+  foreach(ISymbol s in sst.Symbols.Where(x => x.Type is Node && !x.IsTypedef)) {
+    var nt = (Ai.Hgb.Seidl.Data.Node)s.Type;
+    var ports = new List<Port>();
+    //foreach(var source in nt.Sources) ports.Add(new Port() { Id = source, Type = PortType.Out });
+    //foreach (var sink in nt.Sinks) ports.Add(new Port() { Id = sink, Type = PortType.In });
+    foreach(var p in nt.Inputs) ports.Add(new Port() { Id = p.Key, Type = PortType.In });
+    foreach (var p in nt.Outputs) ports.Add(new Port() { Id = p.Key, Type = PortType.Out });
+    rt.AddPoint(new Point(s.Name, nt.GetIdentifier(), nt.ImageName + ":" + nt.ImageTag, ports));
+  }
+
+  // loop over all edges
+  foreach(ISymbol s in sst.Symbols.Where(x => x.Type is Edge)) {
+    var e = (Edge)s.Type;
+    var fromPoint = rt.Points.Find(x => x.Id == e.FromNode);
+    var fromPort = fromPoint.Ports.Find(x => x.Id == e.FromPort);
+    var toPoint = rt.Points.Find(x => x.Id == e.ToNode);
+    var toPort = toPoint.Ports.Find(x => x.Id == e.ToPort);
+
+    rt.AddRoute(new Ai.Hgb.Common.Entities.Route(s.Name, fromPoint, fromPort, toPoint, toPort));
+  }
+
+  return rt;
 }

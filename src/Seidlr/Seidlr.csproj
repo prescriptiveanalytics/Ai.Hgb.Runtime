@@ -26,8 +26,8 @@
     <PackageReference Include="Ai.Hgb.Dat.Communication" Version="0.1.5-prerelease-g6a7b89bf94" />
     <PackageReference Include="Ai.Hgb.Dat.Configuration" Version="0.1.5-prerelease-gebc7d23a1b" />
     <PackageReference Include="Ai.Hgb.Dat.Utils" Version="0.1.4-prerelease-gebc7d23a1b" />
-    <PackageReference Include="Ai.Hgb.Seidl.Data" Version="0.1.12-prerelease-g5252460954" />
-    <PackageReference Include="Ai.Hgb.Seidl.Processor" Version="0.1.21-prerelease-g5252460954" />
+    <PackageReference Include="Ai.Hgb.Seidl.Data" Version="0.1.15-prerelease-gba05298d20" />
+    <PackageReference Include="Ai.Hgb.Seidl.Processor" Version="0.1.26-prerelease-g3b121f20a3" />
     <PackageReference Include="Docker.DotNet" Version="3.125.15" />
     <PackageReference Include="YamlDotNet" Version="16.2.1" />
   </ItemGroup>

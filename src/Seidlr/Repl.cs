@@ -10,6 +10,7 @@ using System.IO;
 using System.Net.Http.Json;
 using System.Reflection;
 using System.Runtime.Intrinsics.X86;
+using System.Text.Json;
 
 namespace Ai.Hgb.Runtime {
 
@@ -605,7 +606,7 @@ namespace Ai.Hgb.Runtime {
               {
                 Image = i.typeImageName + ":" + i.typeImageTag,
                 Name = i.typeImageName + "." + i.name,
-                Cmd = new string[] { i.parameterJson }
+                Cmd = new string[] { JsonSerializer.Serialize(i.parameters) }
               }));
             }
 
@@ -620,36 +621,6 @@ namespace Ai.Hgb.Runtime {
           else {
             Console.WriteLine(postResponse.StatusCode);
           }
-
-
-          // old:          
-          //var parser = Utils.TokenizeAndParse(text);
-          //var linter = new Linter(parser);
-          //linter.ProgramTextUrl = path;
-
-          //var table = linter.CreateScopedSymbolTableSecured();
-
-          //Console.WriteLine("\n\nTable:\n********************************\n");
-          //var tabletext = table.Print(null);
-          //Console.WriteLine(tabletext.ToString());
-
-
-          //Console.WriteLine("\n\nGraph:\n********************************\n");
-          //var gr = table.GetGraph();
-          //Console.WriteLine(string.Join(", ", gr.nodes));
-
-          //var sst = table;
-          //var s = sst.Global;
-          //var nodetypeSymbols = sst[s].Where(x => x.Type is Node && x.IsTypedef);
-          //var nodeSymbols = sst[s].Where(x => x.Type is Node && !x.IsTypedef);
-          //var inits = new List<InitializationRecord>();
-
-          //foreach (var ns in nodeSymbols) {
-          //  // TODO: translate properties to JSON string
-          //  // TODO: create routing table from in/output
-          //  var nst = (Node)ns.Type;
-          //  inits.Add(new InitializationRecord(ns.Name, nst.ImageName, nst.ImageTag, "", new RoutingTable()));
-          //}
 
           //brokerConfigBase.Routing = CreateRoutingTable(table);
 

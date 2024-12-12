@@ -1,5 +1,6 @@
 ﻿using Ai.Hgb.Dat.Communication;
 using Ai.Hgb.Dat.Configuration;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -19,7 +20,7 @@ Console.WriteLine(string.Join('\n', args));
 Parameters parameters = null;
 if (args.Length == 1) {
   try {
-    parameters = JsonSerializer.Deserialize<Parameters>(args[0]);
+    parameters = JsonSerializer.Deserialize<Parameters>(args[0]); // new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping }
     Console.WriteLine(parameters);
   }
   catch (Exception ex) { Console.WriteLine(ex.Message); }
