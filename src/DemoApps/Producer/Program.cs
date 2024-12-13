@@ -1,4 +1,5 @@
-﻿using Ai.Hgb.Dat.Communication;
+﻿using Ai.Hgb.Common.Entities;
+using Ai.Hgb.Dat.Communication;
 using Ai.Hgb.Dat.Configuration;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -16,15 +17,17 @@ SocketConfiguration internalSocketConfig, externalSocketConfig;
 // load internal config
 var internalConfig = Parser.Parse<SocketConfiguration>("./configurations/Producer.yml");
 
-Console.WriteLine(string.Join('\n', args));
 Parameters parameters = null;
-if (args.Length == 1) {
-  try {
-    parameters = JsonSerializer.Deserialize<Parameters>(args[0]); // new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping }
-    Console.WriteLine(parameters);
-  }
-  catch (Exception ex) { Console.WriteLine(ex.Message); }
+RoutingTable routingTable = null;
+
+try {
+  if (args.Length > 0) parameters = JsonSerializer.Deserialize<Parameters>(args[0]);
+  if (args.Length > 1) routingTable = JsonSerializer.Deserialize<RoutingTable>(args[1]);
+  
+  Console.WriteLine(parameters);
 }
+catch (Exception ex) { Console.WriteLine(ex.Message); }
+
 
 var address = new HostAddress(hostName, hostPort);
 var converter = new JsonPayloadConverter();
@@ -49,7 +52,8 @@ try {
   while (!cts.Token.IsCancellationRequested && no < parameters.DocCount) {
     Task.Delay(1500 + rnd.Next(1000)).Wait();
     no++;
-    socket.Publish("docs/all", new Document("id" + no, socket.Configuration.Name, parameters.DocPrefix + "Lorem ipsum..."));
+    var route = routingTable.Routes.Find(x => x.Source.Id == "pro" && x.SourcePort.Id == "docs");
+    socket.Publish(route.SourcePort.Address, new Document("id" + no, socket.Configuration.Name, parameters.DocPrefix + "Lorem ipsum..."));
     Console.WriteLine("Producer: published new document.");
   }
 }

@@ -20,8 +20,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-    <PackageReference Include="Ai.Hgb.Common.Entities" Version="0.1.5-prerelease-g745b231a4e" />
-    <PackageReference Include="Ai.Hgb.Common.Utils" Version="0.1.2-prerelease-g745b231a4e" />
+    <PackageReference Include="Ai.Hgb.Common.Entities" Version="0.1.9-prerelease-ga62c160758" />
+    <PackageReference Include="Ai.Hgb.Common.Utils" Version="0.1.2-prerelease-ga62c160758" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.1" />
     <PackageReference Include="Serilog.AspNetCore" Version="8.0.1" />

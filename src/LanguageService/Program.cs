@@ -247,6 +247,7 @@ void MapRoutes() {
   app.MapPost("/translate/initializations", (ProgramRecord req) => {
     try {
       var sst = ParseSST(req.programText);
+      var rt = sst.GetRoutingTable();
       var s = sst.Global;
       var nodetypeSymbols = sst[s].Where(x => x.Type is Node && x.IsTypedef);
       var nodeSymbols = sst[s].Where(x => x.Type is Node && !x.IsTypedef);
@@ -258,15 +259,25 @@ void MapRoutes() {
         var propertyDict = new Dictionary<string, object>();
         foreach(var prop in nst.Properties) {
           propertyDict.Add(prop.Key, prop.Value.GetValue());
-        }
-
-        // TODO: create routing table from in/output
-
+        }      
         
-        inits.Add(new InitializationRecord(ns.Name, nst.ImageName, nst.ImageTag, propertyDict, new RoutingTable()));
+        inits.Add(new InitializationRecord(ns.Name, nst.ImageName, nst.ImageTag, propertyDict, rt));
       }
 
       return Results.Ok(inits);
+    }
+    catch (Exception exc) {
+      Log.Fatal(exc.Message);
+      return Results.Ok(exc.Message);
+    }
+  });
+
+  app.MapPost("/translate/routing", (ProgramRecord req) => {
+    try {
+      var sst = ParseSST(req.programText);
+      var rt = sst.GetRoutingTable();
+            
+      return Results.Ok(rt);
     }
     catch (Exception exc) {
       Log.Fatal(exc.Message);

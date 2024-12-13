@@ -590,23 +590,48 @@ namespace Ai.Hgb.Runtime {
       return Task.Run(async () =>
       {
         try {
+          string runId = Guid.NewGuid().ToString();
           string text = File.ReadAllText(path);
           var pr = new ProgramRecord(text);
 
+          // 
+          var routingResponse = await languageServiceClient.PostAsJsonAsync("translate/routing", pr);
+          if(routingResponse.IsSuccessStatusCode) {
+            var rt = await routingResponse.Content.ReadFromJsonAsync<RoutingTable>();
+          }
+
           var postResponse = await languageServiceClient.PostAsJsonAsync("translate/initializations", pr);
-          if (postResponse.IsSuccessStatusCode) {
-            Console.WriteLine(postResponse.StatusCode);
-            var inits = await postResponse.Content.ReadFromJsonAsync<List<InitializationRecord>>();
-            Console.WriteLine(inits.Count);
-            Console.WriteLine(string.Join('\n', inits.Select(x => x.name + " (" + x.typeImageName + ":" + x.typeImageTag + ")")));
+          if (postResponse.IsSuccessStatusCode) {            
+            var inits = await postResponse.Content.ReadFromJsonAsync<List<InitializationRecord>>();                       
             
             var containerTasks = new List<Task<CreateContainerResponse>>();
-            foreach(var i in inits) {
+            foreach(var init in inits) {
+              // filter routing table
+              //var rt = i.routing.ExtractForPoint(i.name);
+              var rt = new RoutingTable();
+              var point = init.routing.Points.Find(x => x.Id == init.name);
+              rt.AddPoint(point);
+              var routes = init.routing.Routes.Where(x => x.Source == point || x.Sink == point);
+              rt.Routes.AddRange(routes);
+
+              // build addresses
+              foreach(var _point in rt.Points) {
+                foreach(var _port in _point.Ports.Where(x => x.Type == PortType.Out || x.Type == PortType.Server)) {
+                  _port.Address = $"{runId}/{_point.Id}/{_port.Id}";
+                }
+              }
+
+              foreach(var _route in rt.Routes) {
+                _route.SourcePort.Address = $"{runId}/{_route.Source.Id}/{_route.SourcePort.Id}";
+                _route.SinkPort.Address = $"{runId}/{_route.Source.Id}/{_route.SourcePort.Id}";
+              }
+              
+
               containerTasks.Add(dockerClient.Containers.CreateContainerAsync(new CreateContainerParameters()
               {
-                Image = i.typeImageName + ":" + i.typeImageTag,
-                Name = i.typeImageName + "." + i.name,
-                Cmd = new string[] { JsonSerializer.Serialize(i.parameters) }
+                Image = init.typeImageName + ":" + init.typeImageTag,
+                Name = init.typeImageName + "." + init.name,
+                Cmd = new string[] { JsonSerializer.Serialize(init.parameters), JsonSerializer.Serialize(rt) }
               }));
             }
 
@@ -630,36 +655,6 @@ namespace Ai.Hgb.Runtime {
       }, cts.Token);
     }
 
-    //private void TestSidl() {
-    //  var table = ReadSidl(null);
-    //  var printout = table.Print(null);
-    //  Console.WriteLine("\nSidl:\n");
-    //  Console.WriteLine(printout.ToString());
-    //}
-
-    //private RoutingTable CreateRoutingTable(ScopedSymbolTable table) {
-    //  var routing = new RoutingTable();
-
-    //  // loop over all nodes
-    //  foreach (ISymbol s in table.Symbols.Where(x => x.Type == typeof(Seidl.Data.Node))) {
-    //    // add nodes to routing table
-    //    var n = (Seidl.Data.Node)s.Type;
-    //    routing.AddNode(new Dat.Configuration.Node(s.Name, n.GetIdentifier(), n.GetIdentifier())); // TODO: extract fully qualified name from container service layer
-    //  }
-
-    //  // loop over all edges
-    //  foreach (ISymbol s in table.Symbols.Where(x => x.Type == typeof(Seidl.Data.Edge))) {
-    //    // add edges to routing table
-    //    var e = (Seidl.Data.Edge)s.Type;
-    //    //routing.AddEdge(new DAT.Configuration.Edge(s.Name, e.From)); // TODO see above
-
-    //    var fromNode = routing.Nodes.Where(x => x.Id == e.FromNode).First();
-    //    var toNode = routing.Nodes.Where(x => x.Id == e.ToNode).First();
-    //    routing.AddEdge(new Dat.Configuration.Edge(s.Name, fromNode, toNode));
-    //  }
-
-    //  return routing;
-    //}
 
     private ScopedSymbolTable ReadSeidl(string path) {
       if (string.IsNullOrEmpty(path)) path = @"..\..\..\..\DemoApps\main.3l";
@@ -670,6 +665,7 @@ namespace Ai.Hgb.Runtime {
 
       return linter.CreateScopedSymbolTableSecured();
     }
+
 
 
     #endregion sandbox

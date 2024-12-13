@@ -27,10 +27,11 @@ nodetype Producer {
 nodetype Consumer {
   image ai.hgb.application.demoapps.consumer.img:latest
   input DocumentMessage docs
+  property int docCount
 }
 
-node Producer pro ( docCount = 100, docPrefix = "Producer says..." )
-node Consumer con ()
+node Producer pro ( docCount = 10, docPrefix = "Producer says..." )
+node Consumer con ( docCount = 5 )
 
 pro.docs --> con.docs
 
