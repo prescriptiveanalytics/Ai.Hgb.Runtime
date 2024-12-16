@@ -34,6 +34,7 @@ int no = 0;
 var route = routingTable.Routes.Find(x => x.Sink.Id == "con" && x.SinkPort.Id == "docs");
 
 socket = new MqttSocket("consumer1", "Consumer", address, converter, connect: true);
+Console.WriteLine(route.SourcePort.Address);
 socket.Subscribe<Document>(route.SinkPort.Address, ProcessDocument, cts.Token);
 
 // v1

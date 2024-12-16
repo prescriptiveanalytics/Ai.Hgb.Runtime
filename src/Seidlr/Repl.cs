@@ -457,7 +457,7 @@ namespace Ai.Hgb.Runtime {
         }
       }, cts.Token);     
     }
-    #endregion runtime
+    #endregion runtime~
 
     #region commands
 
@@ -611,7 +611,7 @@ namespace Ai.Hgb.Runtime {
               var rt = new RoutingTable();
               var point = init.routing.Points.Find(x => x.Id == init.name);
               rt.AddPoint(point);
-              var routes = init.routing.Routes.Where(x => x.Source == point || x.Sink == point);
+              var routes = init.routing.Routes.Where(x => x.Source.Id == point.Id || x.Sink.Id == point.Id); // TODO: change to x.Sink.Equals(point)
               rt.Routes.AddRange(routes);
 
               // build addresses

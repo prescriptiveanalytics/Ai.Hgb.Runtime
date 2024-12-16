@@ -53,6 +53,7 @@ try {
     Task.Delay(1500 + rnd.Next(1000)).Wait();
     no++;
     var route = routingTable.Routes.Find(x => x.Source.Id == "pro" && x.SourcePort.Id == "docs");
+    Console.WriteLine(route.SourcePort.Address);
     socket.Publish(route.SourcePort.Address, new Document("id" + no, socket.Configuration.Name, parameters.DocPrefix + "Lorem ipsum..."));
     Console.WriteLine("Producer: published new document.");
   }
