@@ -6,6 +6,7 @@ docker rmi ai.hgb.runtime.broker.img:latest
 docker rmi ai.hgb.runtime.languageservice.img:latest
 docker rmi ai.hgb.application.demoapps.producer.img:latest
 docker rmi ai.hgb.application.demoapps.consumer.img:latest
+docker rmi ai.hgb.application.demoapps.prosumer.img:latest
 
 ECHO publish and build images
 
@@ -43,4 +44,11 @@ dotnet publish -c Release
 xcopy ".\configurations\*" ".\bin\Release\net8.0\publish\" /Y
 xcopy ".\configurations\*" ".\bin\Release\net8.0\" /Y
 docker build -t ai.hgb.application.demoapps.consumer.img -f Dockerfile .
+Popd
+
+Pushd .\DemoApps\Prosumer
+dotnet publish -c Release
+xcopy ".\configurations\*" ".\bin\Release\net8.0\publish\" /Y
+xcopy ".\configurations\*" ".\bin\Release\net8.0\" /Y
+docker build -t ai.hgb.application.demoapps.prosumer.img -f Dockerfile .
 Popd
