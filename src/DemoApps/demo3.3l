@@ -1,0 +1,16 @@
+ai.hgb.packages.demoapps.exp3:latest
+import ai.hgb.packages.demoapps:latest
+
+node Consumer con ( docCount = 1000 )
+node Prosumer pos ( docCount = 200 )
+
+for i in 1 to 4 {
+  node Producer var("p", i) ( docCount = 50, docPrefix = "..." )
+  var("p", i).docs --> pos.docparts
+}
+pos.docs --> con.docs
+
+for j in 1 to 4 {
+  node Producer var("pro", j) ( docCount = 50, docPrefix = "..." )
+  var("pro", j).docs --> con.docs
+}

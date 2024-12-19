@@ -15,4 +15,4 @@ COPY configurations /Consumer/out/configurations
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /Consumer
 COPY --from=build-env /Consumer/out .
-ENTRYPOINT ["dotnet", "Consumer.dll"]
+ENTRYPOINT ["dotnet", "ai.hgb.application.demoapps.Consumer.dll"]

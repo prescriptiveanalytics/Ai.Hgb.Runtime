@@ -276,7 +276,8 @@ void MapRoutes() {
     try {
       var sst = ParseSST(req.programText);
       var rt = sst.GetRoutingTable();
-            
+      //var rt = GetRoutingTable(sst);
+
       return Results.Ok(rt);
     }
     catch (Exception exc) {

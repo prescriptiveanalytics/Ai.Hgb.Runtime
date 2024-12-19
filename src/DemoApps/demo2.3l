@@ -1,53 +1,9 @@
+ai.hgb.packages.demoapps.exp2:latest
+import ai.hgb.packages.demoapps:latest
 
-ai.hgb.packages.demoapps.procon:latest
-
-# import ai.hgb.packages.base:latest
-# import ai.hgb.packages.base.network:latest
-
-# host = "127.0.0.1"
-# port = 1883
-# basetopic = "docs"
-
-struct Document {
-  string Id
-  string Author
-  string Text
-  float Value
-}
-
-message DocumentMessage { Document payload }
-
-nodetype Producer {
-  image ai.hgb.application.demoapps.producer.img:latest
-  output DocumentMessage docs
-  property int docCount
-  property string docPrefix
-}
-
-nodetype Consumer {
-  image ai.hgb.application.demoapps.consumer.img:latest
-  input DocumentMessage docs
-  property int docCount
-}
-
-nodetype Prosumer {
-  image ai.hgb.application.demoapps.prosumer.img:latest
-  input DocumentMessage docparts
-  output DocumentMessage docs
-  property int docCount
-}
-
-
-node Consumer con ( docCount = 100 )
-node Prosumer pos ( docCount = 25 )
-
-for i in 1 to 4 {
-  node Producer var("p", i) ( docCount = 10, docPrefix = "..." )
-  var("p", i).docs --> pos.docparts
-}
-pos.docs --> con.docs
+node Consumer con ( docCount = 500 )
 
 for j in 1 to 4 {
-  node Producer var("pro", j) ( docCount = 10, docPrefix = "..." )
+  node Producer var("pro", j) ( docCount = 50, docPrefix = "..." )
   var("pro", j).docs --> con.docs
 }

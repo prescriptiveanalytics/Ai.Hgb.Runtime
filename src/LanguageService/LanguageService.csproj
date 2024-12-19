@@ -11,7 +11,6 @@
 
 	<ItemGroup>
 		<Folder Include="logs\" />
-		<Folder Include="packages\" />
 
 		<Content Include="logs\*">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -21,11 +20,15 @@
 		</Content>
 	</ItemGroup>
 
+	<ItemGroup>
+	  <None Remove="packages\ai.hgb.packages.demoapps\ai.hgb.packages.demoapps.index.3l" />
+	</ItemGroup>
+
 
 	<ItemGroup>
-    <PackageReference Include="Ai.Hgb.Common.Entities" Version="0.1.9-prerelease-ga62c160758" />
-    <PackageReference Include="Ai.Hgb.Seidl.Data" Version="0.1.19-prerelease-g915fc3c075" />
-    <PackageReference Include="Ai.Hgb.Seidl.Processor" Version="0.1.29-prerelease-g915fc3c075" />
+    <PackageReference Include="Ai.Hgb.Common.Entities" Version="0.1.10-prerelease-gd41b989097" />
+    <PackageReference Include="Ai.Hgb.Seidl.Data" Version="0.1.21-prerelease-ge5a7f7dc6a" />
+    <PackageReference Include="Ai.Hgb.Seidl.Processor" Version="0.1.32-prerelease-g6bf94283f4" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.1" />
     <PackageReference Include="Serilog.AspNetCore" Version="8.0.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />

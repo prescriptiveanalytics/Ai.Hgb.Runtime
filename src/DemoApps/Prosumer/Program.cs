@@ -27,7 +27,7 @@ namespace Prosumer {
       SocketConfiguration internalSocketConfig, externalSocketConfig;
 
       // load internal config
-      var internalConfig = Parser.Parse<SocketConfiguration>("./configurations/Consumer.yml");
+      var internalConfig = Parser.Parse<SocketConfiguration>("./configurations/Prosumer.yml");
 
 
 
@@ -42,14 +42,15 @@ namespace Prosumer {
       var address = new HostAddress(hostName, hostPort);
       var converter = new JsonPayloadConverter();
       var cts = new CancellationTokenSource();
+      socket = new MqttSocket(parameters.Name, parameters.Name, address, converter, connect: true);
 
 
-      var route = routingTable.Routes.Find(x => x.Sink.Id == "pos" && x.SinkPort.Id == "docparts");
-
-      socket = new MqttSocket("prosumer1", "Prosumer", address, converter, connect: true);
-      Console.WriteLine("SourcePortAddress: " + route.SourcePort.Address);
-      Console.WriteLine("SinkPortAddress: " + route.SinkPort.Address);
-      socket.Subscribe<Document>(route.SinkPort.Address, ProcessDocument, cts.Token);
+      var routes = routingTable.Routes.Where(x => x.Sink.Id == parameters.Name && x.SinkPort.Id == "docparts");
+      foreach(var route in routes) {
+        Console.WriteLine("SourcePortAddress: " + route.SourcePort.Address);
+        Console.WriteLine("SinkPortAddress: " + route.SinkPort.Address);
+        socket.Subscribe<Document>(route.SinkPort.Address, ProcessDocument, cts.Token);
+      }
 
       try {
         while (!cts.Token.IsCancellationRequested) {
@@ -71,8 +72,10 @@ namespace Prosumer {
       lock (locker) {
         documents.Add(doc);
         if (documents.Count == 3) {
-          var route = routingTable.Routes.Find(x => x.Source.Id == "pos" && x.SourcePort.Id == "docs");
-          socket.Publish(route.SourcePort.Address, new Document("id" + no, socket.Configuration.Name, string.Join(';', documents.Select(x => x.Text))));
+          var routes = routingTable.Routes.Where(x => x.Source.Id == "pos" && x.SourcePort.Id == "docs");
+          foreach(var route in routes) {
+            socket.Publish(route.SourcePort.Address, new Document("id" + no, socket.Configuration.Name, string.Join(';', documents.Select(x => x.Text))));
+          }
           Console.WriteLine("Prosumer: published aggregated document.");
           documents.Clear();
         }

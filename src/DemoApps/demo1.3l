@@ -1,31 +1,7 @@
-
-ai.hgb.packages.demoapps.procon:latest
-
-struct Document {
-  string Id
-  string Author
-  string Text
-  float Value
-}
-
-message DocumentMessage { Document payload }
-
-nodetype Producer {
-  image ai.hgb.application.demoapps.producer.img:latest
-  output DocumentMessage docs
-  property int docCount
-  property string docPrefix
-}
-
-nodetype Consumer {
-  image ai.hgb.application.demoapps.consumer.img:latest
-  input DocumentMessage docs
-  property int docCount
-}
+ai.hgb.packages.demoapps.exp1:latest 
+import ai.hgb.packages.demoapps:latest
 
 node Consumer con ( docCount = 100 )
+node Producer pro ( docCount = 50, docPrefix = "Producer says..." )
 
-for j in 1 to 4 {
-  node Producer var("pro", j) ( docCount = 10, docPrefix = "..." )
-  var("pro", j).docs --> con.docs
-}
+pro.docs --> con.docs

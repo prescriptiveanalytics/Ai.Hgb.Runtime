@@ -22,7 +22,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LanguageService", "Language
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Orchestrator", "Orchestrator\Orchestrator.csproj", "{070215FF-0AEF-4A98-BC98-1734A010CB1B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Prosumer", "Prosumer\Prosumer.csproj", "{41DCA20D-71CE-4F58-AD8A-CA5245884032}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Prosumer", "DemoApps\Prosumer\Prosumer.csproj", "{41DCA20D-71CE-4F58-AD8A-CA5245884032}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

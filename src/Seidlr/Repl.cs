@@ -75,7 +75,7 @@ namespace Ai.Hgb.Runtime {
     #endregion properties
 
     #region fields
-    private static string[] COMMANDS = { "run", "runpc", "demo", "state", "start", "pause", "stop", "attach", "detach", "cancel", "save", "exit", "q", "quit", "list" };
+    private static string[] COMMANDS = { "runold", "run", "demo", "state", "start", "pause", "stop", "attach", "detach", "cancel", "save", "exit", "q", "quit", "list" };
     private static string DOCKER_RUNTIME_ID_PREFIX = "ai.hgb.runtime";
     private static string DOCKER_APPLICATION_ID_PREFIX = "ai.hgb.application";
 
@@ -191,7 +191,7 @@ namespace Ai.Hgb.Runtime {
         if (cmd.Key == "exit" || cmd.Key == "q" || cmd.Key == "quit") {
           exit = true;
         }
-        else if (cmd.Key == "run") {
+        else if (cmd.Key == "runold") {
           string path = null;
           if (cmd.Value != null && cmd.Value.Count > 0) path = cmd.Value[0];
           if (string.IsNullOrEmpty(path)) {
@@ -205,8 +205,13 @@ namespace Ai.Hgb.Runtime {
             runningTask = Guid.NewGuid().ToString();
           }
         }
-        else if (cmd.Key == "runpc") {
-          string path = @"..\..\..\..\DemoApps\main.3l";
+        else if (cmd.Key == "run") {
+          string path = @"..\..\..\..\DemoApps";
+
+          string demofile = "main";
+          if(cmd.Value != null && cmd.Value.Count > 0) demofile = cmd.Value[0];
+          path = Path.Combine(path, demofile+".3l");
+
           PerformRunSeidl(path).Wait();
           runningTask = Guid.NewGuid().ToString();
         }
@@ -615,18 +620,24 @@ namespace Ai.Hgb.Runtime {
               rt.Routes.AddRange(routes);
 
               // build addresses
-              foreach(var _point in rt.Points) {
+              //Console.WriteLine("\nPoints:");
+              foreach (var _point in rt.Points) {
                 foreach(var _port in _point.Ports.Where(x => x.Type == PortType.Out || x.Type == PortType.Server)) {
                   _port.Address = $"{runId}/{_point.Id}/{_port.Id}";
                 }
+
+                //Console.WriteLine(_point.Id);
               }
 
+              //Console.WriteLine("\nRoutes:");
               foreach(var _route in rt.Routes) {
                 _route.SourcePort.Address = $"{runId}/{_route.Source.Id}/{_route.SourcePort.Id}";
                 _route.SinkPort.Address = $"{runId}/{_route.Source.Id}/{_route.SourcePort.Id}";
-              }
-              
 
+                //Console.WriteLine(_route.Source.Id + "." + _route.SourcePort.Id + " --> " + _route.Sink.Id + "." + _route.SinkPort.Id);
+              }
+
+              init.parameters["name"] = init.name;
               containerTasks.Add(dockerClient.Containers.CreateContainerAsync(new CreateContainerParameters()
               {
                 Image = init.typeImageName + ":" + init.typeImageTag,

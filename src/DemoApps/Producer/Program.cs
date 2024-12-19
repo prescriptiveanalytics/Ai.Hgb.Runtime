@@ -32,36 +32,47 @@ catch (Exception ex) { Console.WriteLine(ex.Message); }
 var address = new HostAddress(hostName, hostPort);
 var converter = new JsonPayloadConverter();
 var cts = new CancellationTokenSource();
-ISocket socket;
+ISocket socket = null;
 
-socket = new MqttSocket("producer1", "Producer", address, converter, connect: true);
-
-var rnd = new Random();
-int no = 0;
-// v1
-//while(!Console.KeyAvailable) {
-//  Task.Delay(1500 + rnd.Next(1000)).Wait();
-//  no++;
-//  socket.Publish("docs/all", new Document("id" + no, socket.Configuration.Name, "Lorem ipsum..."));
-//  Console.WriteLine("Producer: published new document.");
-//}
-//socket.Disconnect();
-
-// v2
 try {
+  socket = new MqttSocket(parameters.Name, parameters.Name, address, converter, connect: true);
+
+  var rnd = new Random();
+  int no = 0;
+
   while (!cts.Token.IsCancellationRequested && no < parameters.DocCount) {
     Task.Delay(1500 + rnd.Next(1000)).Wait();
     no++;
-    var route = routingTable.Routes.Find(x => x.Source.Id == "pro" && x.SourcePort.Id == "docs");
-    Console.WriteLine(route.SourcePort.Address);
-    socket.Publish(route.SourcePort.Address, new Document("id" + no, socket.Configuration.Name, parameters.DocPrefix + "Lorem ipsum..."));
+
+    var routes = routingTable.Routes.Where(x => x.Source.Id == parameters.Name && x.SourcePort.Id == "docs");
+    foreach (var route in routes) {
+      Console.WriteLine(route.SourcePort.Address);
+      socket.Publish(route.SourcePort.Address, new Document("id" + no, socket.Configuration.Name, parameters.DocPrefix + "Lorem ipsum..."));
+    }
     Console.WriteLine("Producer: published new document.");
   }
-}
-catch (Exception ex) { }
-finally {
+
+} catch(Exception ex) {
+  Console.WriteLine(ex.Message);
+} finally {
   socket.Disconnect();
 }
+
+// v2
+//try {
+//  while (!cts.Token.IsCancellationRequested && no < parameters.DocCount) {
+//    Task.Delay(1500 + rnd.Next(1000)).Wait();
+//    no++;
+//    var route = routingTable.Routes.Find(x => x.Source.Id == "pro" && x.SourcePort.Id == "docs");
+//    Console.WriteLine(route.SourcePort.Address);
+//    socket.Publish(route.SourcePort.Address, new Document("id" + no, socket.Configuration.Name, parameters.DocPrefix + "Lorem ipsum..."));
+//    Console.WriteLine("Producer: published new document.");
+//  }
+//}
+//catch (Exception ex) { }
+//finally {
+//  socket.Disconnect();
+//}
 
 
 public struct Document {
