@@ -1,0 +1,42 @@
+ai.hgb.packages.demoapps.exp4:latest 
+
+struct Document {
+  string Id
+  string Author
+  string Text
+  float Value
+}
+
+message DocumentMessage { Document payload }
+
+nodetype Producer {
+  image ai.hgb.application.demoapps.producer.img:latest
+  command dotnet "C:\dev\workspaces\spa\Ai.Hgb.Runtime\src\DemoApps\Producer\bin\Release\net8.0" "ai.hgb.application.demoapps.Producer.dll"
+
+  output DocumentMessage docs
+  property int docCount
+  property string docPrefix
+}
+
+nodetype Consumer {
+  image ai.hgb.application.demoapps.consumer.img:latest
+  command dotnet "C:\dev\workspaces\spa\Ai.Hgb.Runtime\src\DemoApps\Consumer\bin\Release\net8.0" "ai.hgb.application.demoapps.Consumer.dll"
+
+  input DocumentMessage docs
+  property int docCount
+}
+
+nodetype Prosumer {
+  image ai.hgb.application.demoapps.prosumer.img:latest
+  command dotnet "C:\dev\workspaces\spa\Ai.Hgb.Runtime\src\DemoApps\Prosumer\bin\Release\net8.0" "ai.hgb.application.demoapps.Prosumer.dll"
+
+  output DocumentMessage docs
+  input DocumentMessage docparts
+  property int docCount
+}
+
+ instantiations
+node Consumer con ( docCount = 100 )
+node Producer pro ( docCount = 50, docPrefix = "Producer says..." )
+
+pro.docs --> con.docs

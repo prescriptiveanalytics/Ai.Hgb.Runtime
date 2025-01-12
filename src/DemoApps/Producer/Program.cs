@@ -1,10 +1,11 @@
 ﻿using Ai.Hgb.Common.Entities;
 using Ai.Hgb.Dat.Communication;
 using Ai.Hgb.Dat.Configuration;
+using System.Diagnostics;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-
+using ai.hgb.application.demoapps.Common;
 
 
 Console.WriteLine("Producer\n");
@@ -12,6 +13,7 @@ Console.WriteLine("Producer\n");
 // default parameters
 string hostName = "host.docker.internal";
 int hostPort = 1883;
+//hostName = "127.0.0.1";
 SocketConfiguration internalSocketConfig, externalSocketConfig;
 
 // load internal config
@@ -20,7 +22,17 @@ var internalConfig = Parser.Parse<SocketConfiguration>("./configurations/Produce
 Parameters parameters = null;
 RoutingTable routingTable = null;
 
+// PERFORMANCE TEST:
+Stopwatch swatch = new Stopwatch();
+swatch.Start();
+Fib(100000000000); // 100 Mill ~27.5sec
+swatch.Stop();
+Console.WriteLine($"Time elapsed: {swatch.ElapsedMilliseconds} ms\n\n");
+
 try {
+  Console.WriteLine(string.Join('\n', args));
+  Console.WriteLine("\n\n");
+
   if (args.Length > 0) parameters = JsonSerializer.Deserialize<Parameters>(args[0]);
   if (args.Length > 1) routingTable = JsonSerializer.Deserialize<RoutingTable>(args[1]);
   
@@ -40,6 +52,7 @@ try {
   var rnd = new Random();
   int no = 0;
 
+  Console.WriteLine("Producer: start publishing");
   while (!cts.Token.IsCancellationRequested && no < parameters.DocCount) {
     Task.Delay(1500 + rnd.Next(1000)).Wait();
     no++;
@@ -74,21 +87,17 @@ try {
 //  socket.Disconnect();
 //}
 
+static long Fib(long x) {
+  if (x == 0) return 0;
 
-public struct Document {
-  public string Id { get; set; }
-  public string Author { get; set; }
-  public string Text { get; set; }
-
-  public Document(string id, string author, string text) {
-    Id = id;
-    Author = author;
-    Text = text;
+  long prev = 0;
+  long next = 1;
+  for (long i = 1; i < x; i++) {
+    long sum = prev + next;
+    prev = next;
+    next = sum;
   }
-
-  public override string ToString() {
-    return $"Id: {Id}, author: {Author}";
-  }
+  return next;
 }
 
 public class Parameters {

@@ -6,6 +6,7 @@ using Ai.Hgb.Seidl.Processor;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Http.Json;
 using System.Reflection;
@@ -75,7 +76,7 @@ namespace Ai.Hgb.Runtime {
     #endregion properties
 
     #region fields
-    private static string[] COMMANDS = { "runold", "run", "demo", "state", "start", "pause", "stop", "attach", "detach", "cancel", "save", "exit", "q", "quit", "list" };
+    private static string[] COMMANDS = { "run", "run-demo", "run-process", "demo", "state", "start", "pause", "stop", "attach", "detach", "cancel", "save", "exit", "q", "quit", "list" };
     private static string DOCKER_RUNTIME_ID_PREFIX = "ai.hgb.runtime";
     private static string DOCKER_APPLICATION_ID_PREFIX = "ai.hgb.application";
 
@@ -191,7 +192,7 @@ namespace Ai.Hgb.Runtime {
         if (cmd.Key == "exit" || cmd.Key == "q" || cmd.Key == "quit") {
           exit = true;
         }
-        else if (cmd.Key == "runold") {
+        else if (cmd.Key == "run") {
           string path = null;
           if (cmd.Value != null && cmd.Value.Count > 0) path = cmd.Value[0];
           if (string.IsNullOrEmpty(path)) {
@@ -201,18 +202,28 @@ namespace Ai.Hgb.Runtime {
           }
 
           if(!string.IsNullOrEmpty(path)) {
-            PerformRunSeidl(path).Wait();
+            PerformRunSeidl_Docker(path).Wait();
             runningTask = Guid.NewGuid().ToString();
           }
         }
-        else if (cmd.Key == "run") {
+        else if (cmd.Key == "run-demo") {
           string path = @"..\..\..\..\DemoApps";
 
           string demofile = "main";
           if(cmd.Value != null && cmd.Value.Count > 0) demofile = cmd.Value[0];
           path = Path.Combine(path, demofile+".3l");
 
-          PerformRunSeidl(path).Wait();
+          PerformRunSeidl_Docker(path).Wait();
+          runningTask = Guid.NewGuid().ToString();
+        }
+        else if (cmd.Key == "run-process") {
+          string path = @"..\..\..\..\DemoApps";
+
+          string demofile = "main";
+          if (cmd.Value != null && cmd.Value.Count > 0) demofile = cmd.Value[0];
+          path = Path.Combine(path, demofile + ".3l");
+
+          PerformRunSeidl_Process(path).Wait();
           runningTask = Guid.NewGuid().ToString();
         }
         else if (cmd.Key == "demo") {
@@ -591,7 +602,85 @@ namespace Ai.Hgb.Runtime {
       }, cts.Token);
     }
 
-    private Task PerformRunSeidl(string path) {
+    private Task PerformRunSeidl_Process(string path) {
+      return Task.Run(async () =>
+      {
+        try {
+          string runId = Guid.NewGuid().ToString();
+          string text = File.ReadAllText(path);
+          var pr = new ProgramRecord(text);
+
+          // 
+          var routingResponse = await languageServiceClient.PostAsJsonAsync("translate/routing", pr);
+          if (routingResponse.IsSuccessStatusCode) {
+            var rt = await routingResponse.Content.ReadFromJsonAsync<RoutingTable>();
+          }
+
+          var postResponse = await languageServiceClient.PostAsJsonAsync("translate/initializations", pr);
+          if (postResponse.IsSuccessStatusCode) {
+            var inits = await postResponse.Content.ReadFromJsonAsync<List<InitializationRecord>>();
+
+            // TODO:
+            //var containerTasks = new List<Task<CreateContainerResponse>>();
+            // DONE:
+            var processList = new List<Process>();
+
+            foreach (var init in inits) {
+              // filter routing table
+              //var rt = i.routing.ExtractForPoint(i.name);
+              var rt = new RoutingTable();
+              var point = init.routing.Points.Find(x => x.Id == init.name);
+              rt.AddPoint(point);
+              var routes = init.routing.Routes.Where(x => x.Source.Id == point.Id || x.Sink.Id == point.Id); // TODO: change to x.Sink.Equals(point)
+              rt.Routes.AddRange(routes);
+
+              // build addresses
+              //Console.WriteLine("\nPoints:");
+              foreach (var _point in rt.Points) {
+                foreach (var _port in _point.Ports.Where(x => x.Type == PortType.Out || x.Type == PortType.Server)) {
+                  _port.Address = $"{runId}/{_point.Id}/{_port.Id}";
+                }
+
+                //Console.WriteLine(_point.Id);
+              }
+
+              //Console.WriteLine("\nRoutes:");
+              foreach (var _route in rt.Routes) {
+                _route.SourcePort.Address = $"{runId}/{_route.Source.Id}/{_route.SourcePort.Id}";
+                _route.SinkPort.Address = $"{runId}/{_route.Source.Id}/{_route.SourcePort.Id}";
+
+                //Console.WriteLine(_route.Source.Id + "." + _route.SourcePort.Id + " --> " + _route.Sink.Id + "." + _route.SinkPort.Id);
+              }
+
+              init.parameters["name"] = init.name;
+
+              Process process = new Process();
+              process.StartInfo.WorkingDirectory = init.exe.workingDirectory;
+              process.StartInfo.FileName = init.exe.command;
+              
+              process.StartInfo.Arguments = init.exe.arguments 
+                + " \"" + JsonSerializer.Serialize(init.parameters).Replace("\"", "\\\"") + "\""
+                + " \"" + JsonSerializer.Serialize(rt).Replace("\"", "\\\"") + "\"";
+              process.StartInfo.UseShellExecute = true;
+              //process.StartInfo.CreateNoWindow = true;
+              processList.Add(process);
+            }
+
+            foreach(var p in processList) {
+              p.Start();
+            }
+
+
+          }
+          else {
+            Console.WriteLine(postResponse.StatusCode);
+          }
+        }
+        catch (Exception ex) { Console.WriteLine(ex.Message); }
+      }, cts.Token);
+    }
+
+    private Task PerformRunSeidl_Docker(string path) {
       return Task.Run(async () =>
       {
         try {
@@ -640,8 +729,8 @@ namespace Ai.Hgb.Runtime {
               init.parameters["name"] = init.name;
               containerTasks.Add(dockerClient.Containers.CreateContainerAsync(new CreateContainerParameters()
               {
-                Image = init.typeImageName + ":" + init.typeImageTag,
-                Name = init.typeImageName + "." + init.name,
+                Image = init.exe.imageName + ":" + init.exe.imageTag,
+                Name = init.exe.imageName + "." + init.name,                
                 Cmd = new string[] { JsonSerializer.Serialize(init.parameters), JsonSerializer.Serialize(rt) }
               }));
             }

@@ -1,41 +1,41 @@
 ai.hgb.packages.demoapps.exp0:latest 
-# import ai.hgb.packages.demoapps:latest
+import ai.hgb.packages.demoapps:latest
 
-string host = "127.0.0.1"
-int port = 15387
-string basetopic = "procon"
+# string host = "127.0.0.1"
+# int port = 15387
+# string basetopic = "procon"
 
-struct Document {
-  string Id
-  string Author
-  string Text
-  float Value
-}
+# struct Document {
+#   string Id
+#   string Author
+#   string Text
+#   float Value
+# }
 
-message DocumentMessage { Document payload }
+# message DocumentMessage { Document payload }
 
-nodetype Producer {
-  image ai.hgb.application.demoapps.producer.img:latest
+# nodetype Producer {
+#   image ai.hgb.application.demoapps.producer.img:latest
 
-  output DocumentMessage docs
-  property int docCount
-  property string docPrefix
-}
+#   output DocumentMessage docs
+#   property int docCount
+#   property string docPrefix
+# }
 
-nodetype Consumer {
-  image ai.hgb.application.demoapps.consumer.img:latest
+# nodetype Consumer {
+#   image ai.hgb.application.demoapps.consumer.img:latest
 
-  input DocumentMessage docs
-  property int docCount
-}
+#   input DocumentMessage docs
+#   property int docCount
+# }
 
-nodetype Prosumer {
-  image ai.hgb.application.demoapps.prosumer.img:latest
+# nodetype Prosumer {
+#   image ai.hgb.application.demoapps.prosumer.img:latest
 
-  output DocumentMessage docs
-  input DocumentMessage docparts
-  property int docCount
-}
+#   output DocumentMessage docs
+#   input DocumentMessage docparts
+#   property int docCount
+# }
 
 
 node Consumer con ( docCount = 100 )

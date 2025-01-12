@@ -8,9 +8,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Broker", "Broker\Broker.csproj", "{C3AE1006-AF67-461F-92A1-958164AD03C4}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DemoApps", "DemoApps", "{DE6A1888-4DFF-4FA4-A1FC-12D43DB175EA}"
-	ProjectSection(SolutionItems) = preProject
-		DemoApps\main.3l = DemoApps\main.3l
-	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Consumer", "DemoApps\Consumer\Consumer.csproj", "{DA3C4A9B-BFFE-4FCA-B270-ECAD116E9852}"
 EndProject
@@ -22,7 +19,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LanguageService", "Language
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Orchestrator", "Orchestrator\Orchestrator.csproj", "{070215FF-0AEF-4A98-BC98-1734A010CB1B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Prosumer", "DemoApps\Prosumer\Prosumer.csproj", "{41DCA20D-71CE-4F58-AD8A-CA5245884032}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Prosumer", "DemoApps\Prosumer\Prosumer.csproj", "{41DCA20D-71CE-4F58-AD8A-CA5245884032}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "DemoApps\Common\Common.csproj", "{5FFCD015-A156-490A-8008-118ED4114FF5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -62,6 +61,10 @@ Global
 		{41DCA20D-71CE-4F58-AD8A-CA5245884032}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{41DCA20D-71CE-4F58-AD8A-CA5245884032}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{41DCA20D-71CE-4F58-AD8A-CA5245884032}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5FFCD015-A156-490A-8008-118ED4114FF5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5FFCD015-A156-490A-8008-118ED4114FF5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5FFCD015-A156-490A-8008-118ED4114FF5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5FFCD015-A156-490A-8008-118ED4114FF5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -70,6 +73,7 @@ Global
 		{DA3C4A9B-BFFE-4FCA-B270-ECAD116E9852} = {DE6A1888-4DFF-4FA4-A1FC-12D43DB175EA}
 		{281EA3C9-9D48-4757-B0D0-5CC8C96659CE} = {DE6A1888-4DFF-4FA4-A1FC-12D43DB175EA}
 		{41DCA20D-71CE-4F58-AD8A-CA5245884032} = {DE6A1888-4DFF-4FA4-A1FC-12D43DB175EA}
+		{5FFCD015-A156-490A-8008-118ED4114FF5} = {DE6A1888-4DFF-4FA4-A1FC-12D43DB175EA}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {3D9722C0-34CD-41E1-8830-C75FC3ECF266}

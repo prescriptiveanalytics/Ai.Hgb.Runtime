@@ -27,8 +27,8 @@
 
 	<ItemGroup>
     <PackageReference Include="Ai.Hgb.Common.Entities" Version="0.1.10-prerelease-gd41b989097" />
-    <PackageReference Include="Ai.Hgb.Seidl.Data" Version="0.1.21-prerelease-ge5a7f7dc6a" />
-    <PackageReference Include="Ai.Hgb.Seidl.Processor" Version="0.1.32-prerelease-g6bf94283f4" />
+    <PackageReference Include="Ai.Hgb.Seidl.Data" Version="0.1.23-prerelease-gd603299a6a" />
+    <PackageReference Include="Ai.Hgb.Seidl.Processor" Version="0.1.34-prerelease-gd603299a6a" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.1" />
     <PackageReference Include="Serilog.AspNetCore" Version="8.0.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />

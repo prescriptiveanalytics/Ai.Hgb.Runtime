@@ -20,5 +20,8 @@
 	  <PackageReference Include="Ai.Hgb.Dat.Configuration" Version="0.1.8-prerelease-g1b7ec83a20" />
 	  <PackageReference Include="Ai.Hgb.Dat.Utils" Version="0.1.4-prerelease-gebc7d23a1b" />
 	</ItemGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\Common\Common.csproj" />
+	</ItemGroup>
 
 </Project>

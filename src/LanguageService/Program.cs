@@ -261,7 +261,8 @@ void MapRoutes() {
           propertyDict.Add(prop.Key, prop.Value.GetValue());
         }      
         
-        inits.Add(new InitializationRecord(ns.Name, nst.ImageName, nst.ImageTag, propertyDict, rt));
+        //inits.Add(new InitializationRecord(ns.Name, nst.ImageName, nst.ImageTag, propertyDict, rt)); // Depr
+        inits.Add(new InitializationRecord(ns.Name, new Executable(nst.ImageName, nst.ImageTag, nst.Command, nst.WorkingDirectory, nst.Arguments), propertyDict, rt));
       }
 
       return Results.Ok(inits);

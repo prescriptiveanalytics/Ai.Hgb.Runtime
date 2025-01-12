@@ -1,14 +1,17 @@
 ﻿using Ai.Hgb.Common.Entities;
 using Ai.Hgb.Dat.Communication;
 using Ai.Hgb.Dat.Configuration;
+using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using ai.hgb.application.demoapps.Common;
 
 Console.WriteLine("Consumer\n");
 
 // default parameters
 string hostName = "host.docker.internal";
 int hostPort = 1883;
+//hostName = "127.0.0.1";
 SocketConfiguration internalSocketConfig, externalSocketConfig;
 
 // load internal config
@@ -18,6 +21,9 @@ Parameters parameters = null;
 RoutingTable routingTable = null;
 
 try {
+  Console.WriteLine(string.Join('\n', args));
+  Console.WriteLine("\n\n");
+
   if (args.Length > 0) parameters = JsonSerializer.Deserialize<Parameters>(args[0]);
   if (args.Length > 1) routingTable = JsonSerializer.Deserialize<RoutingTable>(args[1]);
 
@@ -39,6 +45,7 @@ foreach(var route in routes) {
   Console.WriteLine(route.SourcePort.Address);
   socket.Subscribe<Document>(route.SinkPort.Address, ProcessDocument, cts.Token);
 }
+Console.WriteLine($"Consumer: subscribed to {routes.Count()} topics");
 
 // v1
 //while (!Console.KeyAvailable) {
@@ -63,24 +70,6 @@ void ProcessDocument(IMessage msg, CancellationToken token) {
   Console.WriteLine("Consumer: received document.");
   Console.WriteLine(">>> " + doc);
   Interlocked.Increment(ref no);
-}
-
-
-
-public struct Document {
-  public string Id { get; set; }
-  public string Author { get; set; }
-  public string Text { get; set; }
-
-  public Document(string id, string author, string text) {
-    Id = id;
-    Author = author;
-    Text = text;
-  }
-
-  public override string ToString() {
-    return $"Id: {Id}, author: {Author}";
-  }
 }
 
 public class Parameters {

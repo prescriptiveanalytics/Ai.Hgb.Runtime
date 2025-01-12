@@ -1,11 +1,12 @@
-﻿using Ai.Hgb.Common.Entities;
+﻿using ai.hgb.application.demoapps.Common;
+using Ai.Hgb.Common.Entities;
 using Ai.Hgb.Dat.Communication;
 using Ai.Hgb.Dat.Configuration;
 using System.Net.Sockets;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Prosumer {
+namespace ai.hgb.application.demoapps.Prosumer {
   public class Program {
 
 
@@ -80,22 +81,6 @@ namespace Prosumer {
           documents.Clear();
         }
       }
-    }
-  }
-
-  public struct Document {
-    public string Id { get; set; }
-    public string Author { get; set; }
-    public string Text { get; set; }
-
-    public Document(string id, string author, string text) {
-      Id = id;
-      Author = author;
-      Text = text;
-    }
-
-    public override string ToString() {
-      return $"Id: {Id}, author: {Author}";
     }
   }
 
