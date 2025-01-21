@@ -16,6 +16,7 @@
 		</Content>
 	</ItemGroup>
 	<ItemGroup>
+	  <PackageReference Include="Ai.Hgb.Common.Entities" Version="0.1.11-prerelease-g63ee91bed2" />
 	  <PackageReference Include="Ai.Hgb.Dat.Communication" Version="0.1.5-prerelease-g6cd36b102f" />
 	  <PackageReference Include="Ai.Hgb.Dat.Configuration" Version="0.1.8-prerelease-g1b7ec83a20" />
 	  <PackageReference Include="Ai.Hgb.Dat.Utils" Version="0.1.4-prerelease-gebc7d23a1b" />

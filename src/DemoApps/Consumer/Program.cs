@@ -8,10 +8,6 @@ using ai.hgb.application.demoapps.Common;
 
 Console.WriteLine("Consumer\n");
 
-// default parameters
-string hostName = "host.docker.internal";
-int hostPort = 1883;
-//hostName = "127.0.0.1";
 SocketConfiguration internalSocketConfig, externalSocketConfig;
 
 // load internal config
@@ -31,7 +27,7 @@ try {
 }
 catch (Exception ex) { Console.WriteLine(ex.Message); }
 
-var address = new HostAddress(hostName, hostPort);
+var address = new HostAddress(parameters.ApplicationParametersNetworking.HostName, parameters.ApplicationParametersNetworking.HostPort);
 var converter = new JsonPayloadConverter();
 var cts = new CancellationTokenSource();
 ISocket socket;
@@ -72,13 +68,17 @@ void ProcessDocument(IMessage msg, CancellationToken token) {
   Interlocked.Increment(ref no);
 }
 
-public class Parameters {
+public class Parameters : IApplicationParametersBase, IApplicationParametersNetworking {
   [JsonPropertyName("name")]
   public string Name { get; set; }
   [JsonPropertyName("description")]
   public string Description { get; set; }
   [JsonPropertyName("docCount")]
   public int DocCount { get; set; }
+  [JsonPropertyName("applicationParametersBase")]
+  public ApplicationParametersBase ApplicationParametersBase { get; set; }
+  [JsonPropertyName("applicationParametersNetworking")]
+  public ApplicationParametersNetworking ApplicationParametersNetworking { get; set; }
 
   public override string ToString() {
     return $"{Name}: DocCount={DocCount}";
