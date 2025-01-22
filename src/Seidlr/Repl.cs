@@ -88,7 +88,8 @@ namespace Ai.Hgb.Runtime {
     private Image brokerImage, repositoryImage, languageServiceImage;
     private Container brokerContainer, repositoryContainer, languageServiceContainer;
     private List<Image> activeImages;
-    private List<Container> activeContainers;
+    private List<CreateContainerResponse> activeContainers;
+    private List<Process> activeProcesses;
 
     private CancellationTokenSource cts;
     private bool exit;
@@ -105,6 +106,8 @@ namespace Ai.Hgb.Runtime {
     public Repl(ReplConfiguration config) {
       cts = new CancellationTokenSource();
       exit = false;
+      activeContainers = new List<CreateContainerResponse>();
+      activeProcesses = new List<Process>();
 
       Startup = new List<RuntimeComponent>();
       foreach(var i in config.Startup) {
@@ -564,6 +567,26 @@ namespace Ai.Hgb.Runtime {
       }, cts.Token);
     }
 
+    private Task PerformStop() {
+      return Task.Run(async () => {
+        foreach (var p in activeProcesses) {
+          p.Kill(true);
+        }
+        foreach (var c in activeContainers) {
+          try {
+            IList<ContainerListResponse> containerList = await dockerClient.Containers.ListContainersAsync(new ContainersListParameters() { All = true });
+            var removalContainerList = containerList.Where(x => activeContainers.Select(x => x.ID).Contains(c.ID)).ToList();
+            foreach (var rc in removalContainerList) {
+              await dockerClient.Containers.StopContainerAsync(rc.ID, new ContainerStopParameters() { WaitBeforeKillSeconds = 1 });
+              await dockerClient.Containers.RemoveContainerAsync(rc.ID, new ContainerRemoveParameters() { Force = true });
+            }
+          }
+          catch (Exception ex) {
+            Console.WriteLine(ex.Message);
+          }
+        }
+      });
+    }
     #endregion commands
 
     #region helper
@@ -658,7 +681,7 @@ namespace Ai.Hgb.Runtime {
               init.parameters.Add("applicationParametersBase", new ApplicationParametersBase(init.name, desc));
               init.parameters.Add("applicationParametersNetworking", new ApplicationParametersNetworking(BrokerUri.Name, BrokerUri.Port));
 
-              Process process = new Process();
+              Process process = new Process();              
               process.StartInfo.WorkingDirectory = init.exe.workingDirectory;
               process.StartInfo.FileName = init.exe.command;
               
@@ -671,7 +694,8 @@ namespace Ai.Hgb.Runtime {
             }
 
             foreach(var p in processList) {
-              p.Start();
+              p.Start();              
+              activeProcesses.Add(p);
             }
 
 
@@ -741,10 +765,16 @@ namespace Ai.Hgb.Runtime {
 
             // wait for setup
             await Task.WhenAll(containerTasks);
-            
+
             // start containers
+            var containerStarts = new List<Task<bool>>();
             foreach(var t in containerTasks) {
-              dockerClient.Containers.StartContainerAsync(t.Result.ID, new ContainerStartParameters());
+              containerStarts.Add(dockerClient.Containers.StartContainerAsync(t.Result.ID, new ContainerStartParameters()));              
+            }
+
+            await Task.WhenAll(containerStarts);
+            foreach (var c in containerTasks) {
+              activeContainers.Add(c.Result);
             }
           }
           else {
@@ -830,10 +860,6 @@ namespace Ai.Hgb.Runtime {
         finally {
         }
       }, cts.Token);
-    }
-
-    private Task PerformStop() {
-      return Task.Run(async () => { });
     }
 
     #endregion demo
