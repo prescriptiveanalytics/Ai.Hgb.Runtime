@@ -1,6 +1,6 @@
-using Monitor.Components;
+using ai.hgb.application.utilitynodes.Monitor.Components;
 
-namespace Monitor {
+namespace ai.hgb.application.utilitynodes.Monitor {
   public class Program {
     public static void Main(string[] args) {
       var builder = WebApplication.CreateBuilder(args);

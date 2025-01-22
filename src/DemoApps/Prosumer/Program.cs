@@ -9,7 +9,6 @@ using System.Text.Json.Serialization;
 namespace ai.hgb.application.demoapps.Prosumer {
   public class Program {
 
-
     static Parameters parameters = null;
     static RoutingTable routingTable = null;
     static ISocket socket;
@@ -23,29 +22,31 @@ namespace ai.hgb.application.demoapps.Prosumer {
       Console.WriteLine("Prosumer\n");
 
       // default parameters
-      string hostName = "host.docker.internal";
-      int hostPort = 1883;
       SocketConfiguration internalSocketConfig, externalSocketConfig;
 
       // load internal config
       var internalConfig = Parser.Parse<SocketConfiguration>("./configurations/Prosumer.yml");
 
-
-
+      // parse parameters and routing table
       try {
         if (args.Length > 0) parameters = JsonSerializer.Deserialize<Parameters>(args[0]);
         if (args.Length > 1) routingTable = JsonSerializer.Deserialize<RoutingTable>(args[1]);
 
+        Console.WriteLine("Parameters:");
+        Console.WriteLine("-------");
         Console.WriteLine(parameters);
+        Console.WriteLine("-------\n");
       }
       catch (Exception ex) { Console.WriteLine(ex.Message); }
 
-      var address = new HostAddress(hostName, hostPort);
+      // setup socket and converter
+      var address = new HostAddress(parameters.ApplicationParametersNetworking.HostName, parameters.ApplicationParametersNetworking.HostPort);
       var converter = new JsonPayloadConverter();
       var cts = new CancellationTokenSource();
       socket = new MqttSocket(parameters.Name, parameters.Name, address, converter, connect: true);
 
-
+      // setup subscriptions and subsequent actions based on routing table
+      Console.WriteLine("Setting up subscriptions and subsequent actions...");
       var routes = routingTable.Routes.Where(x => x.Sink.Id == parameters.Name && x.SinkPort.Id == "docparts");
       foreach(var route in routes) {
         Console.WriteLine("SourcePortAddress: " + route.SourcePort.Address);
@@ -68,7 +69,7 @@ namespace ai.hgb.application.demoapps.Prosumer {
 
     static void ProcessDocument(IMessage msg, CancellationToken token) {
       var doc = (Document)msg.Content;
-      Console.WriteLine("Prosumer: received document.");
+      Console.WriteLine("Received document " + doc.Id);
       Console.WriteLine(">>> " + doc);
       lock (locker) {
         documents.Add(doc);
@@ -77,20 +78,24 @@ namespace ai.hgb.application.demoapps.Prosumer {
           foreach(var route in routes) {
             socket.Publish(route.SourcePort.Address, new Document("id" + no, socket.Configuration.Name, string.Join(';', documents.Select(x => x.Text))));
           }
-          Console.WriteLine("Prosumer: published aggregated document.");
+          Console.WriteLine("Published aggregated document " + doc.Id);
           documents.Clear();
         }
       }
     }
   }
 
-  public class Parameters {
+  public class Parameters : IApplicationParametersBase, IApplicationParametersNetworking {
     [JsonPropertyName("name")]
     public string Name { get; set; }
     [JsonPropertyName("description")]
     public string Description { get; set; }
     [JsonPropertyName("docCount")]
     public int DocCount { get; set; }
+    [JsonPropertyName("applicationParametersBase")]
+    public ApplicationParametersBase ApplicationParametersBase { get; set; }
+    [JsonPropertyName("applicationParametersNetworking")]
+    public ApplicationParametersNetworking ApplicationParametersNetworking { get; set; }
 
     public override string ToString() {
       return $"{Name}: DocCount={DocCount}";

@@ -643,9 +643,6 @@ namespace Ai.Hgb.Runtime {
           if (postResponse.IsSuccessStatusCode) {
             var inits = await postResponse.Content.ReadFromJsonAsync<List<InitializationRecord>>();
 
-            // TODO:
-            //var containerTasks = new List<Task<CreateContainerResponse>>();
-            // DONE:
             var processList = new List<Process>();
 
             foreach (var init in inits) {
@@ -754,7 +751,13 @@ namespace Ai.Hgb.Runtime {
                 //Console.WriteLine(_route.Source.Id + "." + _route.SourcePort.Id + " --> " + _route.Sink.Id + "." + _route.SinkPort.Id);
               }
 
+              // add base parameters to list
               init.parameters["name"] = init.name;
+              string desc = init.parameters.ContainsKey("description") ? (string)init.parameters["description"] : "";
+              init.parameters.Add("applicationParametersBase", new ApplicationParametersBase(init.name, desc));
+              if (BrokerUri.Name == "127.0.0.1" || BrokerUri.Name == "localhost") BrokerUri.Name = "host.docker.internal"; // modify broker host name
+              init.parameters.Add("applicationParametersNetworking", new ApplicationParametersNetworking(BrokerUri.Name, BrokerUri.Port));
+
               containerTasks.Add(dockerClient.Containers.CreateContainerAsync(new CreateContainerParameters()
               {
                 Image = init.exe.imageName + ":" + init.exe.imageTag,
