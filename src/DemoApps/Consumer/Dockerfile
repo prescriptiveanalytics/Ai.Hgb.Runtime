@@ -1,15 +1,19 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-env
-WORKDIR /Consumer
+WORKDIR .
 
 # Copy everything
-COPY . ./
+COPY "Consumer/*.csproj" "Consumer/"
+COPY "Common/*.csproj" "Common/"
 
 # Restore as distinct layers
-RUN dotnet restore
+RUN dotnet restore "Consumer/Consumer.csproj"
 
 # Build and publish a release
+COPY "Consumer/" "Consumer/"
+COPY "Common/" "Common/"
+WORKDIR /Consumer
 RUN dotnet publish -c Release -o out
-COPY configurations /Consumer/out/configurations
+COPY Consumer/configurations /Consumer/out/configurations
 
 # Build runtime image
 FROM mcr.microsoft.com/dotnet/aspnet:8.0

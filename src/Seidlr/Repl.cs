@@ -210,7 +210,7 @@ namespace Ai.Hgb.Runtime {
           }
         }
         else if (cmd.Key == "run-demo") {
-          string path = @"..\..\..\..\DemoApps";
+          string path = @"..\..\..\..\DemoApps\SeidlTexts";
 
           string demofile = "main";
           if(cmd.Value != null && cmd.Value.Count > 0) demofile = cmd.Value[0];
@@ -220,7 +220,7 @@ namespace Ai.Hgb.Runtime {
           runningTask = Guid.NewGuid().ToString();
         }
         else if (cmd.Key == "run-process") {
-          string path = @"..\..\..\..\DemoApps";
+          string path = @"..\..\..\..\DemoApps\SeidlTexts";
 
           string demofile = "main";
           if (cmd.Value != null && cmd.Value.Count > 0) demofile = cmd.Value[0];
@@ -575,7 +575,7 @@ namespace Ai.Hgb.Runtime {
         foreach (var c in activeContainers) {
           try {
             IList<ContainerListResponse> containerList = await dockerClient.Containers.ListContainersAsync(new ContainersListParameters() { All = true });
-            var removalContainerList = containerList.Where(x => activeContainers.Select(x => x.ID).Contains(c.ID)).ToList();
+            var removalContainerList = containerList.Where(x => activeContainers.Select(a => a.ID).Contains(x.ID)).ToList();
             foreach (var rc in removalContainerList) {
               await dockerClient.Containers.StopContainerAsync(rc.ID, new ContainerStopParameters() { WaitBeforeKillSeconds = 1 });
               await dockerClient.Containers.RemoveContainerAsync(rc.ID, new ContainerRemoveParameters() { Force = true });
@@ -794,7 +794,7 @@ namespace Ai.Hgb.Runtime {
 
 
     private ScopedSymbolTable ReadSeidl(string path) {
-      if (string.IsNullOrEmpty(path)) path = @"..\..\..\..\DemoApps\main.3l";
+      if (string.IsNullOrEmpty(path)) path = @"..\..\..\..\DemoApps\SeidlTexts\main.3l";
       string text = File.ReadAllText(path);
       var parser = Utils.TokenizeAndParse(text);
       var linter = new Linter(parser);

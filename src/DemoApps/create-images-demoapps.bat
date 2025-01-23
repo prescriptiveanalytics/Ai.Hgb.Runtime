@@ -8,30 +8,30 @@ docker rmi ai.hgb.application.demoapps.performancetest.img:latest
 
 ECHO publish and build images
 
-Pushd .\DemoApps\Producer
+Pushd .\Producer
 dotnet publish -c Release
 xcopy ".\configurations\*" ".\bin\Release\net8.0\publish\" /Y
 xcopy ".\configurations\*" ".\bin\Release\net8.0\" /Y
-docker build -t ai.hgb.application.demoapps.producer.img -f Producer.Dockerfile .
+docker build -t ai.hgb.application.demoapps.producer.img -f Dockerfile ..
 Popd
 
-Pushd .\DemoApps\Consumer
+Pushd .\Consumer
 dotnet publish -c Release
 xcopy ".\configurations\*" ".\bin\Release\net8.0\publish\" /Y
 xcopy ".\configurations\*" ".\bin\Release\net8.0\" /Y
-docker build -t ai.hgb.application.demoapps.consumer.img -f Consumer.Dockerfile .
+docker build -t ai.hgb.application.demoapps.consumer.img -f Dockerfile ..
 Popd
 
-Pushd .\DemoApps\Prosumer
+Pushd .\Prosumer
 dotnet publish -c Release
 xcopy ".\configurations\*" ".\bin\Release\net8.0\publish\" /Y
 xcopy ".\configurations\*" ".\bin\Release\net8.0\" /Y
-docker build -t ai.hgb.application.demoapps.prosumer.img -f Prosumer.Dockerfile .
+docker build -t ai.hgb.application.demoapps.prosumer.img -f Dockerfile ..
 Popd
 
-Pushd .\DemoApps\PerformanceTest
+Pushd .\PerformanceTest
 dotnet publish -c Release
 xcopy ".\configurations\*" ".\bin\Release\net8.0\publish\" /Y
 xcopy ".\configurations\*" ".\bin\Release\net8.0\" /Y
-docker build -t ai.hgb.application.demoapps.performancetest.img -f PerformanceTest.Dockerfile .
+docker build -t ai.hgb.application.demoapps.performancetest.img -f Dockerfile ..
 Popd
