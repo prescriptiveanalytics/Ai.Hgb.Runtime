@@ -76,7 +76,7 @@ namespace Ai.Hgb.Runtime {
     #endregion properties
 
     #region fields
-    private static string[] COMMANDS = { "run", "run-demo", "run-process", "demo", "state", "start", "pause", "stop", "attach", "detach", "cancel", "save", "exit", "q", "quit", "list" };
+    private static string[] COMMANDS = { "run", "demo", "state", "start", "pause", "stop", "attach", "detach", "cancel", "save", "exit", "q", "quit", "list" };
     private static string DOCKER_RUNTIME_ID_PREFIX = "ai.hgb.runtime";
     private static string DOCKER_APPLICATION_ID_PREFIX = "ai.hgb.application";
 
@@ -88,8 +88,10 @@ namespace Ai.Hgb.Runtime {
     private Image brokerImage, repositoryImage, languageServiceImage;
     private Container brokerContainer, repositoryContainer, languageServiceContainer;
     private List<Image> activeImages;
-    private List<CreateContainerResponse> activeContainers;
-    private List<Process> activeProcesses;
+    //private List<CreateContainerResponse> activeContainers;
+    //private List<Process> activeProcesses;
+    private Dictionary<string, List<CreateContainerResponse>> activeContainers;
+    private Dictionary<string, List<Process>> activeProcesses;
 
     private CancellationTokenSource cts;
     private bool exit;
@@ -106,17 +108,19 @@ namespace Ai.Hgb.Runtime {
     public Repl(ReplConfiguration config) {
       cts = new CancellationTokenSource();
       exit = false;
-      activeContainers = new List<CreateContainerResponse>();
-      activeProcesses = new List<Process>();
+      //activeContainers = new List<CreateContainerResponse>();
+      //activeProcesses = new List<Process>();
+      activeContainers = new Dictionary<string, List<CreateContainerResponse>>();
+      activeProcesses = new Dictionary<string, List<Process>>();
 
       Startup = new List<RuntimeComponent>();
-      foreach(var i in config.Startup) {
+      foreach (var i in config.Startup) {
         if (RuntimeComponent.Docker.NameEquals(i.ToLower())) Startup.Add(RuntimeComponent.Docker);
         else if (RuntimeComponent.Repository.NameEquals(i.ToLower())) Startup.Add(RuntimeComponent.Repository);
         else if (RuntimeComponent.LanguageService.NameEquals(i.ToLower())) Startup.Add(RuntimeComponent.LanguageService);
         else if (RuntimeComponent.Broker.NameEquals(i.ToLower())) Startup.Add(RuntimeComponent.Broker);
       }
-      
+
       DockerUri = new Uri(config.DockerUri);
       RepositoryUri = new Uri(config.RepositoryUri);
       LanguageServiceUri = new Uri(config.LanguageServiceUri);
@@ -197,44 +201,40 @@ namespace Ai.Hgb.Runtime {
         }
         else if (cmd.Key == "run") {
           string path = null;
-          if (cmd.Value != null && cmd.Value.Count > 0) path = cmd.Value[0];
-          if (string.IsNullOrEmpty(path)) {
-            // look for *.3l inside current dir and subdirs
-            var files = Directory.GetFiles(Directory.GetCurrentDirectory(), "*.3l", SearchOption.AllDirectories);
-            if(files.Length > 0) path = files[0];
+          bool foundFile = false;
+          int optionsCounter = 0;
+          string runtime = "docker";
+
+          if(cmd.Value != null && cmd.Value.Count > 0) {
+            if (cmd.Value[optionsCounter] == "docker") optionsCounter++;
+            if (cmd.Value[optionsCounter] == "process") { runtime = "process"; optionsCounter++; }
           }
 
-          if(!string.IsNullOrEmpty(path)) {
-            PerformRunSeidl_Docker(path).Wait();
+          if (cmd.Value != null && cmd.Value.Count > 0) {
+            path = cmd.Value[optionsCounter];
+            if(!path.EndsWith(".3l")) path = Path.Combine(path, ".3l");
+            if (File.Exists(path)) foundFile = true;
+            if (!foundFile) path = Path.Combine(@"..\..\..\..\DemoApps\SeidlTexts\", path);
+            if (File.Exists(path)) foundFile = true;
+          }
+
+          if (foundFile) {
+            if(runtime == "docker") PerformRunSeidl_Docker(path).Wait();
+            else if (runtime == "process") PerformRunSeidl_Process(path).Wait();
             runningTask = Guid.NewGuid().ToString();
           }
-        }
-        else if (cmd.Key == "run-demo") {
-          string path = @"..\..\..\..\DemoApps\SeidlTexts";
-
-          string demofile = "main";
-          if(cmd.Value != null && cmd.Value.Count > 0) demofile = cmd.Value[0];
-          path = Path.Combine(path, demofile+".3l");
-
-          PerformRunSeidl_Docker(path).Wait();
-          runningTask = Guid.NewGuid().ToString();
-        }
-        else if (cmd.Key == "run-process") {
-          string path = @"..\..\..\..\DemoApps\SeidlTexts";
-
-          string demofile = "main";
-          if (cmd.Value != null && cmd.Value.Count > 0) demofile = cmd.Value[0];
-          path = Path.Combine(path, demofile + ".3l");
-
-          PerformRunSeidl_Process(path).Wait();
-          runningTask = Guid.NewGuid().ToString();
         }
         else if (cmd.Key == "demo") {
           PerformDemo().Wait();
           runningTask = Guid.NewGuid().ToString();
         }
         else if (cmd.Key == "stop") {
-          PerformStop().Wait();          
+          string key = null;
+          if (cmd.Value != null && cmd.Value.Count > 0) {
+            key = cmd.Value[0];
+          }
+
+          PerformStop(key).Wait();
           runningTask = null;
         }
         else if (cmd.Key == "attach") {
@@ -243,7 +243,7 @@ namespace Ai.Hgb.Runtime {
         else if (cmd.Key == "state") {
           GetStateBroker().Wait();
         }
-        else if (cmd.Key == "list") {          
+        else if (cmd.Key == "list") {
           if (cmd.Value.Contains("images")) Repository_ListImages().Wait();
           if (cmd.Value.Contains("containers")) Repository_ListContainers().Wait();
           if (cmd.Value.Contains("descriptions")) Repository_ListDescriptions().Wait();
@@ -255,14 +255,14 @@ namespace Ai.Hgb.Runtime {
 
     #region runtime
     private void StartupRuntime() {
-      foreach(var component in Startup) {
-        if(component == RuntimeComponent.Docker) StartupDocker();
+      foreach (var component in Startup) {
+        if (component == RuntimeComponent.Docker) StartupDocker();
         else if (component == RuntimeComponent.Repository) StartupRepository();
         else if (component == RuntimeComponent.LanguageService) StartupLanguageService();
         else if (component == RuntimeComponent.Broker) StartupBroker();
       }
 
-      if(Startup.Contains(RuntimeComponent.Repository) && Startup.Contains(RuntimeComponent.LanguageService)) {
+      if (Startup.Contains(RuntimeComponent.Repository) && Startup.Contains(RuntimeComponent.LanguageService)) {
         InitRepository();
       }
     }
@@ -294,15 +294,16 @@ namespace Ai.Hgb.Runtime {
       string path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
       path = Path.Join(path, "configurations");
       path = Path.Join(path, "repository");
-      
-      var portBindings = new Dictionary<string, IList<PortBinding>> { { RepositoryImageExposedPort.ToString(), new List<PortBinding>() } };      
+
+      var portBindings = new Dictionary<string, IList<PortBinding>> { { RepositoryImageExposedPort.ToString(), new List<PortBinding>() } };
       portBindings[RepositoryImageExposedPort.ToString()].Add(new PortBinding() { HostIP = RepositoryUri.Host, HostPort = RepositoryUri.Port.ToString() });
-      var hostConfig = new HostConfig() { PortBindings = portBindings };      
+      var hostConfig = new HostConfig() { PortBindings = portBindings };
       var exposedPorts = new Dictionary<string, EmptyStruct> { { RepositoryImageExposedPort.ToString(), new EmptyStruct() } };
 
-      var parameters = new CreateContainerParameters() {
+      var parameters = new CreateContainerParameters()
+      {
         Image = $"{RepositoryImageName}:{RepositoryImageTag}",
-        Name = RepositoryContainerName,                
+        Name = RepositoryContainerName,
         Cmd = new string[] { "spa2.db", "true" },
         Volumes = new Dictionary<string, EmptyStruct>() { { $"{path}:{containerPath}", new EmptyStruct() } },
         ExposedPorts = exposedPorts,
@@ -314,9 +315,9 @@ namespace Ai.Hgb.Runtime {
       repositoryContainer = new Container { Hash = c.ID, Name = parameters.Name };
       dockerClient.Containers.StartContainerAsync(repositoryContainer.Hash, new ContainerStartParameters(), cts.Token).Wait();
 
-     // startup repository client
-     //https://learn.microsoft.com/de-de/aspnet/web-api/overview/advanced/calling-a-web-api-from-a-net-client
-     HttpClientHandler clientHandler = new HttpClientHandler();
+      // startup repository client
+      //https://learn.microsoft.com/de-de/aspnet/web-api/overview/advanced/calling-a-web-api-from-a-net-client
+      HttpClientHandler clientHandler = new HttpClientHandler();
       clientHandler.ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => { return true; };
 
       repositoryClient = new HttpClient(clientHandler);
@@ -333,7 +334,7 @@ namespace Ai.Hgb.Runtime {
       {
         IList<ImagesListResponse> imageList = await dockerClient.Images.ListImagesAsync(new ImagesListParameters() { All = true });
         IList<ContainerListResponse> containerList = await dockerClient.Containers.ListContainersAsync(new ContainersListParameters() { All = true });
-        
+
         imageList = imageList.Where(x => x.RepoTags.Any()).ToList();
 
 
@@ -342,7 +343,7 @@ namespace Ai.Hgb.Runtime {
             Console.WriteLine(t);
             var nameAndTag = t.Split(':');
             var hash = i.ID.Split(":")[1];
-            var img = new Image() { Hash = hash, Name = nameAndTag[0], Tag = nameAndTag[1], Created = i.Created, Size = i.Size };            
+            var img = new Image() { Hash = hash, Name = nameAndTag[0], Tag = nameAndTag[1], Created = i.Created, Size = i.Size };
             var postResponse = await repositoryClient.PostAsJsonAsync("images", img);
             var x = postResponse.Headers.Location;
             Console.WriteLine(x);
@@ -364,7 +365,8 @@ namespace Ai.Hgb.Runtime {
     }
 
     private void TeardownRepository() {
-      Task.Run(async () => {
+      Task.Run(async () =>
+      {
         if (repositoryClient != null) repositoryClient.Dispose();
         if (repositoryContainer != null) {
           await dockerClient.Containers.StopContainerAsync(repositoryContainer.Hash, new ContainerStopParameters() { WaitBeforeKillSeconds = 1 });
@@ -380,10 +382,11 @@ namespace Ai.Hgb.Runtime {
       var hostConfig = new HostConfig() { PortBindings = portBindings };
       var exposedPorts = new Dictionary<string, EmptyStruct> { { LanguageServiceImageExposedPort.ToString(), new EmptyStruct() } };
 
-      var parameters = new CreateContainerParameters() {
+      var parameters = new CreateContainerParameters()
+      {
         Image = $"{LanguageServiceImageName}:{LanguageServiceImageTag}",
         Name = LanguageServiceContainerName,
-        Cmd = new string[] { LanguageServiceImageExposedPort.ToString(), RepositoryUri.Port.ToString() },        
+        Cmd = new string[] { LanguageServiceImageExposedPort.ToString(), RepositoryUri.Port.ToString() },
         ExposedPorts = exposedPorts,
         HostConfig = hostConfig
       };
@@ -401,9 +404,10 @@ namespace Ai.Hgb.Runtime {
     }
 
     private void TeardownLanguageService() {
-      Task.Run(async () => {
-        if(languageServiceClient != null) languageServiceClient.Dispose();
-        if(languageServiceContainer != null) {
+      Task.Run(async () =>
+      {
+        if (languageServiceClient != null) languageServiceClient.Dispose();
+        if (languageServiceContainer != null) {
           await dockerClient.Containers.StopContainerAsync(languageServiceContainer.Hash, new ContainerStopParameters() { WaitBeforeKillSeconds = 1 });
           await dockerClient.Containers.RemoveContainerAsync(languageServiceContainer.Hash, new ContainerRemoveParameters() { Force = true });
         }
@@ -424,14 +428,16 @@ namespace Ai.Hgb.Runtime {
       var portBindings = new Dictionary<string, IList<PortBinding>> { { BrokerUri.Port.ToString(), new List<PortBinding>() }, { BrokerWebsocketUri.Port.ToString(), new List<PortBinding>() } };
       portBindings[BrokerUri.Port.ToString()].Add(new PortBinding() { HostIP = BrokerUri.Name, HostPort = BrokerUri.Port.ToString() });
       portBindings[BrokerWebsocketUri.Port.ToString()].Add(new PortBinding() { HostIP = BrokerWebsocketUri.Name, HostPort = BrokerWebsocketUri.Port.ToString() });
-      var hostConfig = new HostConfig() { 
+      var hostConfig = new HostConfig()
+      {
         PortBindings = portBindings
         //,Binds = new[] { path }
       };
       var exposedPorts = new Dictionary<string, EmptyStruct> { { BrokerUri.Port.ToString(), new EmptyStruct() }, { BrokerWebsocketUri.Port.ToString(), new EmptyStruct() } };
 
       // startup repository container
-      var parameters = new CreateContainerParameters() {
+      var parameters = new CreateContainerParameters()
+      {
         Image = $"{BrokerImageName}:{BrokerImageTag}",
         Name = BrokerContainerName,
         Cmd = new string[] { BrokerUri.Name, BrokerUri.Port.ToString() },
@@ -445,7 +451,8 @@ namespace Ai.Hgb.Runtime {
     }
 
     private void TeardownBroker() {
-      Task.Run(async () => {        
+      Task.Run(async () =>
+      {
         if (brokerContainer != null) {
           await dockerClient.Containers.StopContainerAsync(brokerContainer.Hash, new ContainerStopParameters() { WaitBeforeKillSeconds = 1 });
           await dockerClient.Containers.RemoveContainerAsync(brokerContainer.Hash, new ContainerRemoveParameters() { Force = true });
@@ -454,17 +461,18 @@ namespace Ai.Hgb.Runtime {
     }
 
     private Task InitRepository() {
-      return Task.Run(async () => {
+      return Task.Run(async () =>
+      {
         var getResponse = await languageServiceClient.GetAsync("descriptions/images");
-        if(getResponse.IsSuccessStatusCode) {
+        if (getResponse.IsSuccessStatusCode) {
           var describedImages = await getResponse.Content.ReadFromJsonAsync<List<string>>(); //name:tag
 
           IList<ImagesListResponse> imageList = await dockerClient.Images.ListImagesAsync(new ImagesListParameters() { All = true });
           imageList = imageList.Where(x => x.RepoTags.Any()).ToList();
 
-          foreach(var describedImage in describedImages) {
+          foreach (var describedImage in describedImages) {
             var dockerImage = imageList.Where(x => x.RepoTags.Contains(describedImage)).FirstOrDefault();
-            if(dockerImage != null) {
+            if (dockerImage != null) {
               var nameTag = describedImage.Split(':');
               var hash = dockerImage.ID.Split(':')[1];
               var img = new Image() { Hash = hash, Name = nameTag[0], Tag = nameTag[1], Created = dockerImage.Created, Size = dockerImage.Size };
@@ -474,7 +482,7 @@ namespace Ai.Hgb.Runtime {
           }
 
         }
-      }, cts.Token);     
+      }, cts.Token);
     }
     #endregion runtime~
 
@@ -500,7 +508,8 @@ namespace Ai.Hgb.Runtime {
     }
 
     private Task Repository_ListImages() {
-      return Task.Run(async () => {
+      return Task.Run(async () =>
+      {
         var getResponse = await repositoryClient.GetAsync("images");
         if (getResponse.IsSuccessStatusCode) {
           var storedImages = await getResponse.Content.ReadFromJsonAsync<List<Image>>();
@@ -512,7 +521,8 @@ namespace Ai.Hgb.Runtime {
     }
 
     private Task Repository_ListContainers() {
-      return Task.Run(async () => {
+      return Task.Run(async () =>
+      {
         var getResponse = repositoryClient.GetAsync("containers").Result;
         if (getResponse.IsSuccessStatusCode) {
           var storedContainers = await getResponse.Content.ReadFromJsonAsync<List<Container>>();
@@ -524,7 +534,8 @@ namespace Ai.Hgb.Runtime {
     }
 
     private Task Repository_ListDescriptions() {
-      return Task.Run(async () => {
+      return Task.Run(async () =>
+      {
         var getResponse = repositoryClient.GetAsync("descriptions").Result;
         if (getResponse.IsSuccessStatusCode) {
           var storedDescriptions = await getResponse.Content.ReadFromJsonAsync<List<Description>>();
@@ -536,7 +547,8 @@ namespace Ai.Hgb.Runtime {
     }
 
     private Task Repository_ListPackages() {
-      return Task.Run(async () => {
+      return Task.Run(async () =>
+      {
         var getResponse = repositoryClient.GetAsync("packages").Result;
         if (getResponse.IsSuccessStatusCode) {
           var storedPackages = await getResponse.Content.ReadFromJsonAsync<List<Package>>();
@@ -567,15 +579,26 @@ namespace Ai.Hgb.Runtime {
       }, cts.Token);
     }
 
-    private Task PerformStop() {
+    private Task PerformStop(string key = null) {
       return Task.Run(async () => {
-        foreach (var p in activeProcesses) {
+        List<Process> killedProcesses = null;
+        List<CreateContainerResponse> killedContainers = null;
+
+        if (string.IsNullOrEmpty(key)) {
+          killedProcesses = activeProcesses.SelectMany(x => x.Value).ToList();
+          killedContainers = activeContainers.SelectMany(x => x.Value).ToList();
+        } else {
+          activeProcesses.TryGetValue(key, out killedProcesses);
+          activeContainers.TryGetValue(key, out killedContainers);
+        }
+
+        foreach (var p in killedProcesses) {
           p.Kill(true);
         }
-        foreach (var c in activeContainers) {
+        foreach (var c in killedContainers) {
           try {
             IList<ContainerListResponse> containerList = await dockerClient.Containers.ListContainersAsync(new ContainersListParameters() { All = true });
-            var removalContainerList = containerList.Where(x => activeContainers.Select(a => a.ID).Contains(x.ID)).ToList();
+            var removalContainerList = containerList.Where(x => killedContainers.Select(a => a.ID).Contains(x.ID)).ToList();
             foreach (var rc in removalContainerList) {
               await dockerClient.Containers.StopContainerAsync(rc.ID, new ContainerStopParameters() { WaitBeforeKillSeconds = 1 });
               await dockerClient.Containers.RemoveContainerAsync(rc.ID, new ContainerRemoveParameters() { Force = true });
@@ -591,7 +614,8 @@ namespace Ai.Hgb.Runtime {
 
     #region helper
     private Task ClearupContainers() {
-      return Task.Run(async () => {
+      return Task.Run(async () =>
+      {
         try {
           IList<ContainerListResponse> containerList = await dockerClient.Containers.ListContainersAsync(new ContainersListParameters() { All = true });
           var removalContainerList = containerList.Where(x => x.Names.Any(y => y.Contains(DOCKER_RUNTIME_ID_PREFIX + ".") || y.Contains(DOCKER_APPLICATION_ID_PREFIX + ".")));
@@ -631,6 +655,7 @@ namespace Ai.Hgb.Runtime {
         try {
           string runId = Guid.NewGuid().ToString();
           string text = File.ReadAllText(path);
+          string fileName = Path.GetFileNameWithoutExtension(path);
           var pr = new ProgramRecord(text);
 
           // 
@@ -678,11 +703,11 @@ namespace Ai.Hgb.Runtime {
               init.parameters.Add("applicationParametersBase", new ApplicationParametersBase(init.name, desc));
               init.parameters.Add("applicationParametersNetworking", new ApplicationParametersNetworking(BrokerUri.Name, BrokerUri.Port));
 
-              Process process = new Process();              
+              Process process = new Process();
               process.StartInfo.WorkingDirectory = init.exe.workingDirectory;
               process.StartInfo.FileName = init.exe.command;
-              
-              process.StartInfo.Arguments = init.exe.arguments 
+
+              process.StartInfo.Arguments = init.exe.arguments
                 + " \"" + JsonSerializer.Serialize(init.parameters).Replace("\"", "\\\"") + "\""
                 + " \"" + JsonSerializer.Serialize(rt).Replace("\"", "\\\"") + "\"";
               process.StartInfo.UseShellExecute = true;
@@ -690,9 +715,10 @@ namespace Ai.Hgb.Runtime {
               processList.Add(process);
             }
 
-            foreach(var p in processList) {
-              p.Start();              
-              activeProcesses.Add(p);
+            if (!activeProcesses.ContainsKey(fileName)) activeProcesses.Add(fileName, new List<Process>());
+            foreach (var p in processList) {
+              p.Start();
+              activeProcesses[fileName].Add(p);
             }
 
 
@@ -711,20 +737,21 @@ namespace Ai.Hgb.Runtime {
         try {
           string runId = Guid.NewGuid().ToString();
           string text = File.ReadAllText(path);
+          string fileName = Path.GetFileNameWithoutExtension(path);
           var pr = new ProgramRecord(text);
 
           // 
           var routingResponse = await languageServiceClient.PostAsJsonAsync("translate/routing", pr);
-          if(routingResponse.IsSuccessStatusCode) {
+          if (routingResponse.IsSuccessStatusCode) {
             var rt = await routingResponse.Content.ReadFromJsonAsync<RoutingTable>();
           }
 
           var postResponse = await languageServiceClient.PostAsJsonAsync("translate/initializations", pr);
-          if (postResponse.IsSuccessStatusCode) {            
-            var inits = await postResponse.Content.ReadFromJsonAsync<List<InitializationRecord>>();                       
-            
+          if (postResponse.IsSuccessStatusCode) {
+            var inits = await postResponse.Content.ReadFromJsonAsync<List<InitializationRecord>>();
+
             var containerTasks = new List<Task<CreateContainerResponse>>();
-            foreach(var init in inits) {
+            foreach (var init in inits) {
               // filter routing table
               //var rt = i.routing.ExtractForPoint(i.name);
               var rt = new RoutingTable();
@@ -736,7 +763,7 @@ namespace Ai.Hgb.Runtime {
               // build addresses
               //Console.WriteLine("\nPoints:");
               foreach (var _point in rt.Points) {
-                foreach(var _port in _point.Ports.Where(x => x.Type == PortType.Out || x.Type == PortType.Server)) {
+                foreach (var _port in _point.Ports.Where(x => x.Type == PortType.Out || x.Type == PortType.Server)) {
                   _port.Address = $"{runId}/{_point.Id}/{_port.Id}";
                 }
 
@@ -744,7 +771,7 @@ namespace Ai.Hgb.Runtime {
               }
 
               //Console.WriteLine("\nRoutes:");
-              foreach(var _route in rt.Routes) {
+              foreach (var _route in rt.Routes) {
                 _route.SourcePort.Address = $"{runId}/{_route.Source.Id}/{_route.SourcePort.Id}";
                 _route.SinkPort.Address = $"{runId}/{_route.Source.Id}/{_route.SourcePort.Id}";
 
@@ -761,7 +788,7 @@ namespace Ai.Hgb.Runtime {
               containerTasks.Add(dockerClient.Containers.CreateContainerAsync(new CreateContainerParameters()
               {
                 Image = init.exe.imageName + ":" + init.exe.imageTag,
-                Name = init.exe.imageName + "." + init.name,                
+                Name = init.exe.imageName + "." + init.name,
                 Cmd = new string[] { JsonSerializer.Serialize(init.parameters), JsonSerializer.Serialize(rt) }
               }));
             }
@@ -771,13 +798,14 @@ namespace Ai.Hgb.Runtime {
 
             // start containers
             var containerStarts = new List<Task<bool>>();
-            foreach(var t in containerTasks) {
-              containerStarts.Add(dockerClient.Containers.StartContainerAsync(t.Result.ID, new ContainerStartParameters()));              
+            foreach (var t in containerTasks) {
+              containerStarts.Add(dockerClient.Containers.StartContainerAsync(t.Result.ID, new ContainerStartParameters()));
             }
 
             await Task.WhenAll(containerStarts);
+            if (!activeContainers.ContainsKey(fileName)) activeContainers.Add(fileName, new List<CreateContainerResponse>());
             foreach (var c in containerTasks) {
-              activeContainers.Add(c.Result);
+              activeContainers[fileName].Add(c.Result);
             }
           }
           else {
@@ -819,9 +847,9 @@ namespace Ai.Hgb.Runtime {
           {
             Image = DOCKER_APPLICATION_ID_PREFIX + ".demoapps.consumer.img:latest",
             Name = consumerContainerName,
-            Cmd = new string[] { "Consumer!!!" }    ,            
+            Cmd = new string[] { "Consumer!!!" },
           });
-          
+
           string path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
           path = Path.Join(path, "configurations");
           path = Path.Join(path, "broker");
@@ -836,8 +864,8 @@ namespace Ai.Hgb.Runtime {
           {
             Image = DOCKER_APPLICATION_ID_PREFIX + ".demoapps.producer.img:latest",
             Name = producerContainerName,
-            Cmd = new string[] { "Producer!!!" },            
-            Volumes = new Dictionary<string, EmptyStruct>() { { vol.Name + ":/configurations/broker", new EmptyStruct() } }            
+            Cmd = new string[] { "Producer!!!" },
+            Volumes = new Dictionary<string, EmptyStruct>() { { vol.Name + ":/configurations/broker", new EmptyStruct() } }
           });
 
           //string path = Directory.GetCurrentDirectory();
