@@ -76,7 +76,7 @@ namespace Ai.Hgb.Runtime {
     #endregion properties
 
     #region fields
-    private static string[] COMMANDS = { "run", "demo", "state", "start", "pause", "stop", "attach", "detach", "cancel", "save", "exit", "q", "quit", "list" };
+    private static string[] COMMANDS = { "run", "demo", "state", "start", "pause", "stop", "attach", "detach", "cancel", "save", "exit", "q", "quit", "list", "monitor" };
     private static string DOCKER_RUNTIME_ID_PREFIX = "ai.hgb.runtime";
     private static string DOCKER_APPLICATION_ID_PREFIX = "ai.hgb.application";
 
@@ -212,7 +212,7 @@ namespace Ai.Hgb.Runtime {
 
           if (cmd.Value != null && cmd.Value.Count > 0) {
             path = cmd.Value[optionsCounter];
-            if(!path.EndsWith(".3l")) path = Path.Combine(path, ".3l");
+            if(!path.EndsWith(".3l")) path = path + ".3l";
             if (File.Exists(path)) foundFile = true;
             if (!foundFile) path = Path.Combine(@"..\..\..\..\DemoApps\SeidlTexts\", path);
             if (File.Exists(path)) foundFile = true;
@@ -248,6 +248,15 @@ namespace Ai.Hgb.Runtime {
           if (cmd.Value.Contains("containers")) Repository_ListContainers().Wait();
           if (cmd.Value.Contains("descriptions")) Repository_ListDescriptions().Wait();
           if (cmd.Value.Contains("packages")) Repository_ListPackages().Wait();
+        }
+        else if(cmd.Key == "monitor") {
+          string key = null;
+          if (cmd.Value != null && cmd.Value.Count > 0) {
+            key = cmd.Value[0];
+          }
+
+          MonitorContainerStats(key).Wait();
+          runningTask = null;
         }
       }
     }
@@ -610,44 +619,6 @@ namespace Ai.Hgb.Runtime {
         }
       });
     }
-    #endregion commands
-
-    #region helper
-    private Task ClearupContainers() {
-      return Task.Run(async () =>
-      {
-        try {
-          IList<ContainerListResponse> containerList = await dockerClient.Containers.ListContainersAsync(new ContainersListParameters() { All = true });
-          var removalContainerList = containerList.Where(x => x.Names.Any(y => y.Contains(DOCKER_RUNTIME_ID_PREFIX + ".") || y.Contains(DOCKER_APPLICATION_ID_PREFIX + ".")));
-          foreach (var c in removalContainerList) {
-            await dockerClient.Containers.StopContainerAsync(c.ID, new ContainerStopParameters() { WaitBeforeKillSeconds = 1 });
-            await dockerClient.Containers.RemoveContainerAsync(c.ID, new ContainerRemoveParameters() { Force = true });
-          }
-        }
-        catch (Exception ex) {
-
-        }
-      }, cts.Token);
-    }
-
-    #endregion helper
-
-    #region sandbox
-    private Task PerformAttachBroker() {
-      return Task.Run(async () =>
-      {
-        try {
-          if (brokerContainer != null) {
-            var stream = await dockerClient.Containers.AttachContainerAsync(brokerContainer.Hash, false, new ContainerAttachParameters() { Stdin = true, Stderr = true, Stdout = true, Stream = true, DetachKeys = "q" });
-            var output = await stream.ReadOutputToEndAsync(cts.Token);
-            Console.WriteLine(output.stdout);
-          }
-        }
-        catch (Exception ex) {
-          Console.WriteLine(ex.Message);
-        }
-      }, cts.Token);
-    }
 
     private Task PerformRunSeidl_Process(string path) {
       return Task.Run(async () =>
@@ -820,6 +791,73 @@ namespace Ai.Hgb.Runtime {
       }, cts.Token);
     }
 
+    #endregion commands
+
+    #region helper
+    private Task ClearupContainers() {
+      return Task.Run(async () =>
+      {
+        try {
+          IList<ContainerListResponse> containerList = await dockerClient.Containers.ListContainersAsync(new ContainersListParameters() { All = true });
+          var removalContainerList = containerList.Where(x => x.Names.Any(y => y.Contains(DOCKER_RUNTIME_ID_PREFIX + ".") || y.Contains(DOCKER_APPLICATION_ID_PREFIX + ".")));
+          foreach (var c in removalContainerList) {
+            await dockerClient.Containers.StopContainerAsync(c.ID, new ContainerStopParameters() { WaitBeforeKillSeconds = 1 });
+            await dockerClient.Containers.RemoveContainerAsync(c.ID, new ContainerRemoveParameters() { Force = true });
+          }
+        }
+        catch (Exception ex) {
+
+        }
+      }, cts.Token);
+    }
+
+    #endregion helper
+
+    #region sandbox
+    private Task PerformAttachBroker() {
+      return Task.Run(async () =>
+      {
+        try {
+          if (brokerContainer != null) {
+            var stream = await dockerClient.Containers.AttachContainerAsync(brokerContainer.Hash, false, new ContainerAttachParameters() { Stdin = true, Stderr = true, Stdout = true, Stream = true, DetachKeys = "q" });
+            var output = await stream.ReadOutputToEndAsync(cts.Token);
+            Console.WriteLine(output.stdout);
+          }
+        }
+        catch (Exception ex) {
+          Console.WriteLine(ex.Message);
+        }
+      }, cts.Token);
+    }
+
+    // https://www.isolineltd.com/blog/2020/getting-started-with-docker-management-from-net.html
+    private Task MonitorContainerStats(string key = null) {
+      return Task.Run(async () => {
+
+        // select containers to be monitored
+        List<CreateContainerResponse> monitoredContainers = null;
+        if(string.IsNullOrEmpty(key)) monitoredContainers = activeContainers.SelectMany(x => x.Value).ToList();
+        else activeContainers.TryGetValue(key, out monitoredContainers);
+
+        foreach (var mc in monitoredContainers) {
+          var stats = dockerClient.Containers.GetContainerStatsAsync(mc.ID, new ContainerStatsParameters { }, new StatsProgress(), cts.Token);
+        }  
+      }, cts.Token);
+    }
+
+    public class StatsProgress : IProgress<ContainerStatsResponse> {
+      public void Report(ContainerStatsResponse value) {
+        Console.WriteLine(value.ToString());
+        Console.WriteLine("CPU Usage Total:  " + value.CPUStats.CPUUsage.PercpuUsage);
+        Console.WriteLine("CPU Usage %:      " + value.CPUStats.CPUUsage.TotalUsage);        
+        Console.WriteLine("CPU System Usage: " + value.CPUStats.SystemUsage);
+        Console.WriteLine("CPU Online:       " + value.CPUStats.OnlineCPUs);
+        Console.WriteLine("Memory Limit:     " + value.MemoryStats.Limit);
+        Console.WriteLine("Memory Max Usage: " + value.MemoryStats.MaxUsage);
+        Console.WriteLine("Memory Usage:     " + value.MemoryStats.Usage);
+        // TODO publish heartbeat
+      }
+    }
 
     private ScopedSymbolTable ReadSeidl(string path) {
       if (string.IsNullOrEmpty(path)) path = @"..\..\..\..\DemoApps\SeidlTexts\main.3l";

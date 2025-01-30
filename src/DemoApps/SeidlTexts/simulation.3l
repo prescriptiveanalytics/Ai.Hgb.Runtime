@@ -1,0 +1,31 @@
+ai.hgb.packages.demoapps.industry:latest 
+
+struct Document {
+  string Id
+  string Author
+  string Text
+  float Value
+}
+
+message DocumentMessage { Document payload }
+
+nodetype Simulation {
+  image ai.hgb.applications.demo.industry:latest
+  
+  output DocumentMessage docs  
+  property int count
+}
+
+nodetype Test {
+  image ai.hgb.applications.demo.industry:latest
+
+  input DocumentMessage docs
+  property int count
+}
+
+node Simulation simulation1 ( count = 1 )
+node Test simulation2 (count = 1 )
+
+simulation1.docs --> simulation2.docs
+
+

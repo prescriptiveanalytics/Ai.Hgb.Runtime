@@ -1,0 +1,19 @@
+ai.hgb.packages.demoapps.industry:latest 
+
+struct Document {
+  string Id
+  string Author
+  string Text
+  float Value
+}
+
+message DocumentMessage { Document payload }
+
+nodetype Producer {
+  image ai.hgb.application.demoapps.producer.img:latest
+  command dotnet "" ""
+
+  output DocumentMessage docs
+  property int docCount
+  property string docPrefix
+}

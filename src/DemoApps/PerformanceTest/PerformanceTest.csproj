@@ -9,4 +9,10 @@
 		<RootNamespace>ai.hgb.application.demoapps.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Ai.Hgb.Common.Entities" Version="0.1.12-prerelease-g33780ec298" />
+    <PackageReference Include="Ai.Hgb.Dat.Communication" Version="0.1.5-prerelease-g6cd36b102f" />
+    <PackageReference Include="Ai.Hgb.Dat.Configuration" Version="0.1.8-prerelease-g1b7ec83a20" />
+  </ItemGroup>
+
 </Project>
