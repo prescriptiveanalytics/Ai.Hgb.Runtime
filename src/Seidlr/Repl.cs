@@ -847,7 +847,8 @@ namespace Ai.Hgb.Runtime {
 
     public class StatsProgress : IProgress<ContainerStatsResponse> {
       public void Report(ContainerStatsResponse value) {
-        Console.WriteLine(value.ToString());
+        //Console.WriteLine(value.ToString());
+        Console.WriteLine();
         Console.WriteLine("CPU Usage Total:  " + value.CPUStats.CPUUsage.PercpuUsage);
         Console.WriteLine("CPU Usage %:      " + value.CPUStats.CPUUsage.TotalUsage);        
         Console.WriteLine("CPU System Usage: " + value.CPUStats.SystemUsage);

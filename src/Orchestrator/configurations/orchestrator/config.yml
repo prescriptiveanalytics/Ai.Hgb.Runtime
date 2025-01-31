@@ -1,0 +1,27 @@
+Startup:
+  - docker
+  - repository
+  - languageserver
+  - broker
+
+DockerUri: npipe://./pipe/docker_engine
+RepositoryUri: http://localhost:8001/
+LanguageServiceUri: http://localhost:8003/
+BrokerUri: 127.0.0.1:1883
+BrokerWebsocketUri: 127.0.0.1:5000
+
+RepositoryImageName: ai.hgb.runtime.repository.img
+RepositoryImageTag: latest
+RepositoryContainerName: ai.hgb.runtime.repository.ctn
+RepositoryImageExposedPort: 7001
+
+LanguageServiceImageName: ai.hgb.runtime.languageservice.img
+LanguageServiceImageTag: latest
+LanguageServiceContainerName: ai.hgb.runtime.languageservice.ctn
+LanguageServiceImageExposedPort: 7003
+
+BrokerImageName: ai.hgb.runtime.broker.img
+BrokerImageTag: latest
+BrokerContainerName: ai.hgb.runtime.broker.ctn
+BrokerImageExposedMqttPort: 1883
+BrokerImageExposedWebsocketPort: 5000

@@ -19,7 +19,7 @@ else if (File.Exists(args[0])) {
 }
 
 if (configUri != null) {
-  string doc = Parser.ReadText(@"configurations/repl/config.yml");
+  string doc = Parser.ReadText(configUri);
   config = dser.Deserialize<ReplConfiguration>(doc);
   var repl = new Repl(config);
   await repl.Run(args);
