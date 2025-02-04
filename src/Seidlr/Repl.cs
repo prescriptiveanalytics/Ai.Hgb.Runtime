@@ -22,6 +22,7 @@ namespace Ai.Hgb.Runtime {
     public static RuntimeComponent Repository => new(2, "repository");
     public static RuntimeComponent LanguageService => new(3, "languageserver");
     public static RuntimeComponent Broker => new(4, "broker");
+    public static RuntimeComponent PerformanceMonitor => new(5, "performancemonitor");
 
     public RuntimeComponent(int id, string name) : base(id, name) { }
   }
@@ -289,7 +290,7 @@ namespace Ai.Hgb.Runtime {
 
     private void StartupDocker() {
       dockerClient = new DockerClientConfiguration(DockerUri).CreateClient();
-      ClearupContainers().Wait();
+      //ClearupContainers().Wait();
     }
 
     private void TeardownDocker() {
