@@ -31,7 +31,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Monitor", "UtilityNodes\Mon
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "UtilityNodes", "UtilityNodes", "{75B9DEC9-9B2A-477E-BDD1-D225FC95FAF0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PerformanceTest", "DemoApps\PerformanceTest\PerformanceTest.csproj", "{B23354D9-6837-48BD-92E1-59077F18719E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PerformanceTest", "DemoApps\PerformanceTest\PerformanceTest.csproj", "{B23354D9-6837-48BD-92E1-59077F18719E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PerformanceMonitor", "PerformanceMonitor\PerformanceMonitor.csproj", "{606DD50A-949D-48A8-91BE-FD5003F40D22}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -91,6 +93,10 @@ Global
 		{B23354D9-6837-48BD-92E1-59077F18719E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B23354D9-6837-48BD-92E1-59077F18719E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B23354D9-6837-48BD-92E1-59077F18719E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{606DD50A-949D-48A8-91BE-FD5003F40D22}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{606DD50A-949D-48A8-91BE-FD5003F40D22}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{606DD50A-949D-48A8-91BE-FD5003F40D22}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{606DD50A-949D-48A8-91BE-FD5003F40D22}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

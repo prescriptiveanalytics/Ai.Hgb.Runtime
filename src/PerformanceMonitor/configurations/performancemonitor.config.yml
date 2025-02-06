@@ -1,0 +1,7 @@
+PerformanceMonitorUri: http://localhost:8005/
+
+DockerUri: npipe://./pipe/docker_engine
+RepositoryUri: http://localhost:8001/
+LanguageServiceUri: http://localhost:8003/
+BrokerUri: 127.0.0.1:1883
+BrokerWebsocketUri: 127.0.0.1:5000

@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>Ai.Hgb.Runtime.$(MSBuildProjectName)</AssemblyName>
+    <RootNamespace>Ai.Hgb.Runtime.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="configurations\performancemonitor.config.yml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+	<ItemGroup>
+		<Folder Include="logs\" />
+		<Content Include="logs\*">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Ai.Hgb.Common.Entities" Version="0.1.12-prerelease-g33780ec298" />
+    <PackageReference Include="Ai.Hgb.Common.Utils" Version="0.1.2-prerelease-gd41b989097" />
+    <PackageReference Include="Ai.Hgb.Dat.Communication" Version="0.1.5-prerelease-g6cd36b102f" />
+    <PackageReference Include="Ai.Hgb.Dat.Configuration" Version="0.1.8-prerelease-g1b7ec83a20" />
+    <PackageReference Include="Ai.Hgb.Dat.Utils" Version="0.1.4-prerelease-gebc7d23a1b" />
+    <PackageReference Include="Docker.DotNet" Version="3.125.15" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.12" />
+    <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+    <PackageReference Include="YamlDotNet" Version="16.3.0" />
+  </ItemGroup>
+
+</Project>
