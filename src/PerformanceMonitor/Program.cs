@@ -1,7 +1,10 @@
 
+using Ai.Hgb.Common.Entities;
 using Ai.Hgb.Dat.Communication;
 using Docker.DotNet;
+using Docker.DotNet.Models;
 using Serilog;
+using System.Numerics;
 using YamlDotNet.Serialization;
 
 namespace Ai.Hgb.Runtime.PerformanceMonitor {
@@ -17,6 +20,10 @@ namespace Ai.Hgb.Runtime.PerformanceMonitor {
     static HttpClient repositoryClient;
     static Socket brokerClient;
     static HttpClient languageServiceClient;
+
+    static Dictionary<string, CancellationTokenSource> monitoringTaskControl;
+    static Dictionary<string, LimitedQueue<Heartbeat>> stateBuffers;
+    static int DEFAULT_BUFFERSIZE = 100;
     #endregion fields
 
     public static void Main(string[] args) {
@@ -97,6 +104,10 @@ namespace Ai.Hgb.Runtime.PerformanceMonitor {
       #endregion #region remote clients setup
 
       #region business logic
+      monitoringTaskControl = new Dictionary<string, CancellationTokenSource>();
+      stateBuffers = new Dictionary<string, LimitedQueue<Heartbeat>>();
+
+
       MapRoutes();
       app.Run();
       #endregion business logic
@@ -104,11 +115,17 @@ namespace Ai.Hgb.Runtime.PerformanceMonitor {
 
     #region routes
     private static void MapRoutes() {
-      app.MapPost("/monitor", (string name, string tag) =>
+      app.MapPost("/monitor-start", (string id, string name, string tag, bool stream) =>
       {
         try {
           string runId = Guid.NewGuid().ToString();
           string nameTag = $"{name}:{tag}";
+
+          var buffer = new LimitedQueue<Heartbeat>(DEFAULT_BUFFERSIZE);
+          stateBuffers.Add(nameTag, buffer);
+          var taskControl = new CancellationTokenSource();
+          monitoringTaskControl.Add(nameTag, taskControl);
+          var stats = dockerClient.Containers.GetContainerStatsAsync(id, new ContainerStatsParameters { }, new StatsProgress(id, name, tag, buffer), taskControl.Token);
 
           return Results.Ok(nameTag);
         }
@@ -118,10 +135,26 @@ namespace Ai.Hgb.Runtime.PerformanceMonitor {
         }
       });
 
+      app.MapPost("/monitor-stop", () =>
+      {
+        foreach (var kvp in monitoringTaskControl) kvp.Value.Cancel();
+      });
+
       app.MapGet("/state/{name}/{tag}", (string name, string tag) =>
       {
         string nameTag = $"{name}:{tag}";
-        return Results.Ok(nameTag);
+        LimitedQueue<Heartbeat> buffer;
+
+        if(stateBuffers.TryGetValue(nameTag, out buffer)) {
+          if(buffer.Count > 0) {
+            var current = buffer.Last();
+            return Results.Ok(current);
+          } else {
+            return Results.NoContent();
+          }
+        } else {
+          return Results.NotFound($"The object {nameTag} could not be found.");
+        }        
       });
 
     }
@@ -137,6 +170,59 @@ namespace Ai.Hgb.Runtime.PerformanceMonitor {
     public string LanguageServiceUri { get; set; }
     public string BrokerUri { get; set; }
     public string BrokerWebsocketUri { get; set; }
+  }
+
+  public class LimitedQueue<T> : Queue<T> {
+    private readonly int _maxSize;
+    public LimitedQueue(int maxSize) {
+      _maxSize = maxSize;
+    }
+
+    public void Enqueue(T item) {
+      this.Enqueue(item);
+
+      if (this.Count > _maxSize)
+        this.Dequeue();        
+    }
+
+    public T Dequeue() {      
+      return this.Dequeue();
+    }
+  }
+
+  public class StatsProgress : IProgress<ContainerStatsResponse> {
+
+    private string id;
+    private string name;
+    private string tag;
+    private LimitedQueue<Heartbeat> status;
+
+
+    public StatsProgress(string _id, string _name, string _tag, LimitedQueue<Heartbeat> _status) {
+      id = _id;
+      name = _name;
+      tag = _tag;
+      status = _status;
+    }
+
+    public void Report(ContainerStatsResponse value) {
+      //Console.WriteLine("CPU Usage Total:  " + value.CPUStats.CPUUsage.PercpuUsage);
+      //Console.WriteLine("CPU Usage %:      " + value.CPUStats.CPUUsage.TotalUsage);
+      //Console.WriteLine("CPU System Usage: " + value.CPUStats.SystemUsage);
+      //Console.WriteLine("CPU Online:       " + value.CPUStats.OnlineCPUs);
+      //Console.WriteLine("Memory Limit:     " + value.MemoryStats.Limit);
+      //Console.WriteLine("Memory Max Usage: " + value.MemoryStats.MaxUsage);
+      //Console.WriteLine("Memory Usage:     " + value.MemoryStats.Usage);
+
+      var heartbeat = new Heartbeat() { ApplicationId = value.ID, ApplicationName = $"{name}:{tag}",
+        CpuUtilization = Convert.ToInt32(value.CPUStats.CPUUsage.PercpuUsage.First()),
+        MemoryUtilization = Convert.ToInt32(value.MemoryStats.Usage)
+      };
+
+      status.Enqueue(heartbeat);
+
+      Console.WriteLine(heartbeat);
+    }
   }
 
   #endregion data structures
