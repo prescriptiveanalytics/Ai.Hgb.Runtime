@@ -11,6 +11,7 @@ using System.IO;
 using System.Net.Http.Json;
 using System.Reflection;
 using System.Runtime.Intrinsics.X86;
+using System.Text;
 using System.Text.Json;
 
 namespace Ai.Hgb.Runtime {
@@ -77,7 +78,7 @@ namespace Ai.Hgb.Runtime {
     #endregion properties
 
     #region fields
-    private static string[] COMMANDS = { "run", "demo", "state", "start", "pause", "stop", "attach", "detach", "cancel", "save", "exit", "q", "quit", "list", "monitor" };
+    private static string[] COMMANDS = { "run", "demo", "state", "start", "pause", "stop", "attach", "detach", "cancel", "save", "exit", "q", "quit", "list", "monitor", "generate", "stubs", "desc" };
     private static string DOCKER_RUNTIME_ID_PREFIX = "ai.hgb.runtime";
     private static string DOCKER_APPLICATION_ID_PREFIX = "ai.hgb.application";
 
@@ -225,6 +226,20 @@ namespace Ai.Hgb.Runtime {
             runningTask = Guid.NewGuid().ToString();
           }
         }
+        else if (cmd.Key == "generate") {
+          if(cmd.Value != null && cmd.Value.Count == 3) {
+            string mode = cmd.Value[0];
+            string descPath = cmd.Value[1];
+            string stubsPath = cmd.Value[2];
+
+            if(mode == "stubs") {
+              GenerateStubs(descPath, stubsPath);
+            } else {
+              Console.WriteLine("For description text generation, please use the utility function in Ai.Hgb.Seidl\n");
+            }
+
+          }
+        }
         else if (cmd.Key == "demo") {
           PerformDemo().Wait();
           runningTask = Guid.NewGuid().ToString();
@@ -250,7 +265,7 @@ namespace Ai.Hgb.Runtime {
           if (cmd.Value.Contains("descriptions")) Repository_ListDescriptions().Wait();
           if (cmd.Value.Contains("packages")) Repository_ListPackages().Wait();
         }
-        else if(cmd.Key == "monitor") {
+        else if (cmd.Key == "monitor") {
           string key = null;
           if (cmd.Value != null && cmd.Value.Count > 0) {
             key = cmd.Value[0];
@@ -796,6 +811,66 @@ namespace Ai.Hgb.Runtime {
 
         }
         catch (Exception ex) { Console.WriteLine(ex.Message); }
+      }, cts.Token);
+    }
+
+    private Task GenerateStubs(string path, string resultPath) {
+      return Task.Run(async () => {
+        try {
+          string runId = Guid.NewGuid().ToString();
+          string text = File.ReadAllText(path);
+          string fileName = Path.GetFileNameWithoutExtension(path);
+          var pr = new ProgramRecord(text);
+          var sb = new StringBuilder();
+
+          RoutingTable rt = null;
+          List<InitializationRecord> inits = null;
+
+          var routingResponse = await languageServiceClient.PostAsJsonAsync("translate/routing", pr);
+          if (routingResponse.IsSuccessStatusCode) {
+            rt = await routingResponse.Content.ReadFromJsonAsync<RoutingTable>();
+          } else {
+            throw new HttpRequestException();
+          }
+
+          var initResponse = await languageServiceClient.PostAsJsonAsync("translate/initializations", pr);
+          if (initResponse.IsSuccessStatusCode) {
+            inits = await initResponse.Content.ReadFromJsonAsync<List<InitializationRecord>>();
+          } else {
+            throw new HttpRequestException();
+          }
+
+          sb.AppendLine("using Ai.Hgb.Common.Entities;");
+          sb.AppendLine("using Ai.Hgb.Dat.Communication;");
+          sb.AppendLine("using Ai.Hgb.Dat.Configuration;");
+          sb.AppendLine();
+          sb.AppendLine("namespace ai.hgb.application." + fileName + " {");
+          sb.AppendLine("public class Program {");
+          sb.AppendLine("static void Main(string[] args) {");
+          sb.AppendLine();
+          sb.AppendLine("var parameters = JsonSerializer.Deserialize<Parameters>(args[0]);");
+          sb.AppendLine("var routingTable = JsonSerializer.Deserialize<RoutingTable>(args[1])");
+
+          sb.AppendLine("// TODO: configure socket");
+          sb.AppendLine("// TODO: configure payload converter");
+
+          foreach(var init in inits) {
+            foreach (var route in rt.Routes.Where(x => x.Sink.Id == init.name)) {
+              sb.AppendLine($"socket.Subscribe<>({route.SinkPort.Address}, ProcessPayload, cts.Token);");
+            }
+            foreach (var route in rt.Routes.Where(x => x.Source.Id == init.name)) {
+              sb.AppendLine($"socket.Publish({route.SourcePort.Address}, new Payload(...));");
+            }
+          }
+
+          sb.AppendLine();
+          sb.AppendLine("}");
+          sb.AppendLine("}");
+          sb.AppendLine("}");
+
+          File.WriteAllText(resultPath, sb.ToString());    
+          
+        } catch (Exception ex) { Console.WriteLine(ex.Message); }
       }, cts.Token);
     }
 
