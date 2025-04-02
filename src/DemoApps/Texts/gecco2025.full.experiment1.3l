@@ -1,0 +1,72 @@
+experiments.cec.gecco2025.full.experiment1:latest
+
+struct Individual {
+    float[] values
+    float fit
+}
+
+message ImmigrationRequest { int count }
+message Subpopulation { Individual[] population }
+message LocalSearchRequest { Individual i, int gens }
+message ImprovedCandidate { Individual i }
+
+edgetype Migration {
+    request ImmigrationRequest
+    response Subpopulation
+}
+
+edgetype Improvement {
+    request LocalSearchRequest
+    response ImprovedCandidate
+}
+
+nodetype ES { # evolution strategy
+    image cec.gecco2025.es.img:latest
+    command dotnet "C:\dev\workspaces\janzenisek\gecco2025\src\EvolutionStrategy\bin\Release\net8.0" "CEAL.EvolutionStrategy.dll"
+
+    property int gens
+    property int mu
+    property int lambda
+    property string strategy
+
+    # local search server side
+    server Improvement imp
+}
+
+nodetype GA { # genetic algorithm
+    image cec.gecco2025.ga.img:latest
+    command dotnet "C:\dev\workspaces\janzenisek\gecco2025\src\GeneticAlgorithm\bin\Release\net8.0" "CEAL.GeneticAlgorithm.dll"
+
+    property int gens
+    property int pops
+    property int elites    
+    property float mutr
+    property float migr
+    property int lsgens
+
+    # migration client side
+    # output ImmigrationRequest immigration
+    # input Migrants immigrants
+    client Migration imi
+
+    # migration server side
+    # input ImmigrationRequest inIr
+    # output Migrants outIm
+    server Migration emi
+
+    # local search client side
+    # output LocalSearchRequest localSearch
+    # input ImprovedCandidate improvedCandidates
+    client Improvement imp
+
+    # result collection
+    publish Subpopulation rep
+}
+
+int[] popSizes = [100, 1000, 10000]
+
+for p in 1 to 3 {        
+    for m in 1 to 3 {
+        node GA ga_$p$_$m (gens = 1000, pops = 1000, mutr = 0.1, migr = 0.01, lsgens=10)        
+    }    
+}

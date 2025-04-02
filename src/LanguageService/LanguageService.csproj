@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <InvariantGlobalization>true</InvariantGlobalization>
@@ -22,16 +22,18 @@
 
 	<ItemGroup>
 	  <None Remove="packages\ai.hgb.packages.demoapps\ai.hgb.packages.demoapps.index.3l" />
+	  <None Remove="packages\packages.cec.gecco2025\packages.cec.gecco2025.index.3l" />
+	  <None Remove="packages\packages.cec.gecco2025\packages.cec.gecco2025.typedefinitions.3l" />
 	</ItemGroup>
 
 
 	<ItemGroup>
-    <PackageReference Include="Ai.Hgb.Common.Entities" Version="0.1.12-prerelease-g33780ec298" />
-    <PackageReference Include="Ai.Hgb.Seidl.Data" Version="0.1.23-prerelease-gd603299a6a" />
-    <PackageReference Include="Ai.Hgb.Seidl.Processor" Version="0.1.35-prerelease-g3b03631a32" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.1" />
-    <PackageReference Include="Serilog.AspNetCore" Version="8.0.1" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+    <PackageReference Include="Ai.Hgb.Common.Entities" Version="0.1.13-prerelease-gb162266326" />
+    <PackageReference Include="Ai.Hgb.Seidl.Data" Version="0.1.27-prerelease-g93ed751c20" />
+    <PackageReference Include="Ai.Hgb.Seidl.Processor" Version="0.1.40-prerelease-g93ed751c20" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.3" />
+    <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.0" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,13 @@
+experiments.cec.gecco2025.demo:v1
+import packages.cec.gecco2025:latest
+
+node OSGA ga1 (gens = 1000, pops = 1000, mutr = 0.1, migr = 0.01, lsgens=10, maxSp = 1.0)
+node OSGA ga2 (gens = 5000, pops = 1000, mutr = 0.1, migr = 0.01, lsgens=10, maxSp = 1.0)
+node ESS ess (mu = 1, lambda = 1, strategy="selfadaptive")
+node Monitor mon (swSize = 1000)
+
+ga1.imi ==> ga2.emi
+ga2.imi ==> ga1.emi
+ga1.imp ==> ess.imp
+ga1.rep, ga2.rep --> mon.rep
+

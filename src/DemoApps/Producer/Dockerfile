@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-env
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build-env
 WORKDIR .
 
 # Copy everything
@@ -16,7 +16,7 @@ RUN dotnet publish -c Release -o out
 COPY Producer/configurations /Producer/out/configurations
 
 # Build runtime image
-FROM mcr.microsoft.com/dotnet/aspnet:8.0
+FROM mcr.microsoft.com/dotnet/aspnet:9.0
 WORKDIR /Producer
 COPY --from=build-env /Producer/out .
 ENTRYPOINT ["dotnet", "ai.hgb.application.demoapps.Producer.dll"]

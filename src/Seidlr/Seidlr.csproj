@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>Ai.Hgb.Runtime.$(MSBuildProjectName)</AssemblyName>
@@ -21,15 +21,15 @@
 	</ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Ai.Hgb.Common.Entities" Version="0.1.12-prerelease-g33780ec298" />
-    <PackageReference Include="Ai.Hgb.Common.Utils" Version="0.1.2-prerelease-gd41b989097" />
-    <PackageReference Include="Ai.Hgb.Dat.Communication" Version="0.1.5-prerelease-g6cd36b102f" />
-    <PackageReference Include="Ai.Hgb.Dat.Configuration" Version="0.1.8-prerelease-g1b7ec83a20" />
-    <PackageReference Include="Ai.Hgb.Dat.Utils" Version="0.1.4-prerelease-gebc7d23a1b" />
-    <PackageReference Include="Ai.Hgb.Seidl.Data" Version="0.1.23-prerelease-gd603299a6a" />
-    <PackageReference Include="Ai.Hgb.Seidl.Processor" Version="0.1.35-prerelease-g3b03631a32" />
+    <PackageReference Include="Ai.Hgb.Common.Entities" Version="0.1.13-prerelease-gb162266326" />
+    <PackageReference Include="Ai.Hgb.Common.Utils" Version="0.1.3-prerelease-gb162266326" />
+    <PackageReference Include="Ai.Hgb.Dat.Communication" Version="0.1.7-prerelease-gdaf7bfe3e4" />
+    <PackageReference Include="Ai.Hgb.Dat.Configuration" Version="0.1.11-prerelease-gdaf7bfe3e4" />
+    <PackageReference Include="Ai.Hgb.Dat.Utils" Version="0.1.5-prerelease-gdaf7bfe3e4" />
+    <PackageReference Include="Ai.Hgb.Seidl.Data" Version="0.1.27-prerelease-g93ed751c20" />
+    <PackageReference Include="Ai.Hgb.Seidl.Processor" Version="0.1.40-prerelease-g93ed751c20" />
     <PackageReference Include="Docker.DotNet" Version="3.125.15" />
-    <PackageReference Include="YamlDotNet" Version="16.2.1" />
+    <PackageReference Include="YamlDotNet" Version="16.3.0" />
   </ItemGroup>
 
 </Project>

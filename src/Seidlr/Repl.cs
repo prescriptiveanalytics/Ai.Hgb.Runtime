@@ -278,6 +278,8 @@ namespace Ai.Hgb.Runtime {
     }
 
     private void TeardownRuntime() {
+      PerformStop(); // teardown all started processes and containers
+
       var teardown = Startup.ToList();
       teardown.Reverse();
       foreach (var component in teardown) {
@@ -602,20 +604,25 @@ namespace Ai.Hgb.Runtime {
           activeContainers.TryGetValue(key, out killedContainers);
         }
 
-        foreach (var p in killedProcesses) {
-          p.Kill(true);
-        }
-        foreach (var c in killedContainers) {
-          try {
-            IList<ContainerListResponse> containerList = await dockerClient.Containers.ListContainersAsync(new ContainersListParameters() { All = true });
-            var removalContainerList = containerList.Where(x => killedContainers.Select(a => a.ID).Contains(x.ID)).ToList();
-            foreach (var rc in removalContainerList) {
-              await dockerClient.Containers.StopContainerAsync(rc.ID, new ContainerStopParameters() { WaitBeforeKillSeconds = 1 });
-              await dockerClient.Containers.RemoveContainerAsync(rc.ID, new ContainerRemoveParameters() { Force = true });
-            }
+        if(killedProcesses !=null) {
+          foreach (var p in killedProcesses) {
+            p.Kill(true);
           }
-          catch (Exception ex) {
-            Console.WriteLine(ex.Message);
+        }
+
+        if(killedContainers != null) {
+          foreach (var c in killedContainers) {
+            try {
+              IList<ContainerListResponse> containerList = await dockerClient.Containers.ListContainersAsync(new ContainersListParameters() { All = true });
+              var removalContainerList = containerList.Where(x => killedContainers.Select(a => a.ID).Contains(x.ID)).ToList();
+              foreach (var rc in removalContainerList) {
+                await dockerClient.Containers.StopContainerAsync(rc.ID, new ContainerStopParameters() { WaitBeforeKillSeconds = 1 });
+                await dockerClient.Containers.RemoveContainerAsync(rc.ID, new ContainerRemoveParameters() { Force = true });
+              }
+            }
+            catch (Exception ex) {
+              Console.WriteLine(ex.Message);
+            }
           }
         }
       });

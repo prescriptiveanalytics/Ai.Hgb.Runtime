@@ -2,7 +2,7 @@ Startup:
   - docker
   - repository
   - languageserver
-  - broker
+  # - broker
 
 DockerUri: npipe://./pipe/docker_engine
 RepositoryUri: http://localhost:8001/
