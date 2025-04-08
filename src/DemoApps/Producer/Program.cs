@@ -1,8 +1,6 @@
 ﻿using Ai.Hgb.Common.Entities;
 using Ai.Hgb.Dat.Communication;
 using Ai.Hgb.Dat.Configuration;
-using System.Diagnostics;
-using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using ai.hgb.application.demoapps.Common;

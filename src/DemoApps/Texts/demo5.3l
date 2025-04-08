@@ -1,0 +1,7 @@
+label experiments.gecco2025.full.experiment1:auto
+
+int[] generations = [100, 1000, 10000]
+
+for g in generations {
+    string gen_{g} = "name gen check"
+}
