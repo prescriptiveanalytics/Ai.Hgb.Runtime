@@ -12,12 +12,12 @@ message ImprovedCandidate { Individual i }
 
 edgetype Migration {
     request ImmigrationRequest
-    response Subpopulation
+    respond Subpopulation
 }
 
 edgetype Improvement {
     request LocalSearchRequest
-    response ImprovedCandidate
+    respond ImprovedCandidate
 }
 
 nodetype ES { # evolution strategy

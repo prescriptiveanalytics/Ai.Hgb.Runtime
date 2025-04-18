@@ -1,4 +1,4 @@
-label ai.hgb.packages.demoapps.exp4:auto 
+label Ai.Hgb.Application.ProCon:auto
 
 struct Document {
   string Id
@@ -7,21 +7,25 @@ struct Document {
   float Value
 }
 
+int DocCount = 10
+string DocPrefix = "[Test] "
+
 message DocumentMessage { Document payload }
 
 nodetype Producer {
-  image ai.hgb.application.demoapps.producer.img:latest
-  command dotnet ".\\" "ai.hgb.application.demoapps.Producer.dll"
+  image Ai.Hgb.Application.ProCon.Producer.img:latest
+  command dotnet ".\\" "Ai.Hgb.Application.ProCon.Producer.dll"
 
   property int docCount
   property string docPrefix
-  
+
   publish DocumentMessage docs
+  publish DocumentMessage docs2
 }
 
 nodetype Consumer {
-  image ai.hgb.application.demoapps.consumer.img:latest
-  command dotnet ".\\" "ai.hgb.application.demoapps.Consumer.dll"
+  image Ai.Hgb.Application.ProCon.Consumer.img:latest
+  command dotnet ".\\" "Ai.Hgb.Application.ProCon.Consumer.dll"
 
   property int docCount
 
@@ -29,8 +33,8 @@ nodetype Consumer {
 }
 
 nodetype Prosumer {
-  image ai.hgb.application.demoapps.prosumer.img:latest
-  command dotnet ".\\" "ai.hgb.application.demoapps.Prosumer.dll"
+  image Ai.Hgb.Application.ProCon.Prosumer.img:latest
+  command dotnet ".\\" "Ai.Hgb.Application.ProCon.Prosumer.dll"
 
   property int docCount
 
